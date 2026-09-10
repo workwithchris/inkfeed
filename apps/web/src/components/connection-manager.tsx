@@ -27,6 +27,12 @@ const PLATFORMS: {
     auth: "token",
   },
   {
+    id: "github",
+    label: "GitHub",
+    description: "Commit Markdown posts to a repository.",
+    auth: "token",
+  },
+  {
     id: "blogger",
     label: "Blogger",
     description: "Google's publishing platform.",
@@ -39,6 +45,8 @@ const DISABLED_PLATFORMS: PlatformId[] = ["linkedin"];
 
 const HINTS: Partial<Record<PlatformId, string>> = {
   devto: "Create an API key at dev.to/settings/extensions and paste it here.",
+  github:
+    "Create a PAT with Contents + Administration: Read and write at github.com/settings/tokens. Posts commit to your OWNER/articles repo.",
 };
 
 export function ConnectionManager() {
@@ -229,6 +237,7 @@ export function ConnectionManager() {
                         {HINTS[platform.id]}
                       </p>
                     )}
+
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"

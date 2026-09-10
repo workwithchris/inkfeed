@@ -147,6 +147,7 @@ export interface PublishDraft {
   content: string;
   summary: string | null;
   tags: string[];
+  slug: string | null;
   canonicalUrl: string | null;
   coverImageUrl: string | null;
 }
@@ -158,7 +159,10 @@ export interface PublishResult {
 
 export interface BlogPublisher {
   readonly platform: PublishPlatform;
-  validate(credential: string): Promise<{
+  validate(
+    credential: string,
+    blogId?: string | null,
+  ): Promise<{
     blogId: string | null;
     blogName: string | null;
   }>;

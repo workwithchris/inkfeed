@@ -77,7 +77,7 @@ export interface PublicArticleResponse {
 export interface ConnectionResponse {
   id: string;
   userId: string;
-  platform: "devto" | "hashnode" | "blogger" | "linkedin";
+  platform: "devto" | "hashnode" | "blogger" | "linkedin" | "github";
   blogId: string | null;
   blogName: string | null;
   createdAt: string;
@@ -88,7 +88,7 @@ export interface PublicationResponse {
   id: string;
   articleId: string;
   connectionId: string;
-  platform: "devto" | "hashnode" | "blogger" | "linkedin";
+  platform: "devto" | "hashnode" | "blogger" | "linkedin" | "github";
   status: string;
   externalId: string | null;
   externalUrl: string | null;
@@ -144,7 +144,7 @@ export async function listConnections(): Promise<ConnectionResponse[]> {
 }
 
 export async function createConnection(data: {
-  platform: "devto" | "hashnode" | "blogger" | "linkedin";
+  platform: "devto" | "hashnode" | "blogger" | "linkedin" | "github";
   credential: string;
   blogId?: string;
 }): Promise<ConnectionResponse> {

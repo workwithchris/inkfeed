@@ -29,7 +29,7 @@ export class ConnectPlatformUseCase {
     let blogId: string | null;
     let blogName: string | null;
     try {
-      const result = await publisher.validate(input.credential);
+      const result = await publisher.validate(input.credential, input.blogId);
       blogId = result.blogId;
       blogName = result.blogName;
     } catch (error) {

@@ -23,6 +23,7 @@ function platformLabel(platform: PublicationResponse["platform"]): string {
   if (platform === "devto") return "Dev.to";
   if (platform === "hashnode") return "Hashnode";
   if (platform === "linkedin") return "LinkedIn";
+  if (platform === "github") return "GitHub";
   return "Blogger";
 }
 

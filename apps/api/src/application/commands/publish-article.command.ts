@@ -79,6 +79,7 @@ export class PublishArticleUseCase {
         content: article.content,
         summary: article.summary,
         tags: article.tags ?? [],
+        slug: article.slug,
         canonicalUrl,
         coverImageUrl: includeCoverImage ? article.coverImageUrl : null,
       });

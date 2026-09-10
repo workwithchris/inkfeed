@@ -19,6 +19,7 @@ import { DevtoPublisher } from "./infrastructure/publishers/devto.publisher";
 import { HashnodePublisher } from "./infrastructure/publishers/hashnode.publisher";
 import { BloggerPublisher } from "./infrastructure/publishers/blogger.publisher";
 import { LinkedInPublisher } from "./infrastructure/publishers/linkedin.publisher";
+import { GitHubPublisher } from "./infrastructure/publishers/github.publisher";
 import { PublisherRegistry } from "./infrastructure/publishers/publisher.registry";
 import { ProcessArticleUseCase } from "./application/commands/process-article.command";
 import { UpdateArticleUseCase } from "./application/commands/update-article.command";
@@ -114,6 +115,7 @@ const EventPublisherProvider = {
     HashnodePublisher,
     BloggerPublisher,
     LinkedInPublisher,
+    GitHubPublisher,
     PublisherRegistry,
     ProcessArticleUseCase,
     UpdateArticleUseCase,
