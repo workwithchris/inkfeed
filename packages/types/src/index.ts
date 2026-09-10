@@ -208,3 +208,56 @@ export interface AiTransformResponse {
   model: string;
   seo: AiSeoMeta;
 }
+
+// ─── AI Providers (BYOK) ──────────────────────────────────
+// Preset ids resolved by @ai-router/core, plus the raw adapter ids.
+export const AI_PROVIDER_IDS = [
+  "openai",
+  "anthropic",
+  "gemini",
+  "deepseek",
+  "groq",
+  "mistral",
+  "openrouter",
+  "xai",
+  "openai-compatible",
+] as const;
+
+export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
+
+export interface AiProvider {
+  id: string;
+  userId: string;
+  provider: AiProviderId;
+  model: string;
+  label: string | null;
+  baseUrl: string | null;
+  enabled: boolean;
+  priority: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateAiProviderDto {
+  provider: AiProviderId;
+  model: string;
+  apiKey: string;
+  label?: string;
+  baseUrl?: string;
+}
+
+export interface UpdateAiProviderDto {
+  label?: string;
+  model?: string;
+  enabled?: boolean;
+  priority?: number;
+}
+
+// A single routing candidate built from a stored provider.
+export interface AiRoute {
+  id: string;
+  provider: string;
+  model: string;
+  apiKey: string;
+  baseUrl?: string;
+}

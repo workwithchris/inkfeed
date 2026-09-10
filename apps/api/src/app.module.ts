@@ -5,11 +5,13 @@ import {
   UserEntity,
   ConnectionEntity,
   PublishEntity,
+  ProviderEntity,
 } from "@repo/database";
 import { TypeOrmArticleRepository } from "./infrastructure/database/typeorm-article.repository";
 import { TypeOrmUserRepository } from "./infrastructure/database/typeorm-user.repository";
 import { TypeOrmConnectionRepository } from "./infrastructure/database/typeorm-connection.repository";
 import { TypeOrmPublishRepository } from "./infrastructure/database/typeorm-publish.repository";
+import { TypeOrmProviderRepository } from "./infrastructure/database/typeorm-provider.repository";
 import { HttpConverterService } from "./infrastructure/http/converter.service";
 import { BullMQWorker } from "./infrastructure/queue/bullmq.worker";
 import { PublishWorker } from "./infrastructure/queue/publish.worker";
@@ -24,10 +26,12 @@ import { PublisherRegistry } from "./infrastructure/publishers/publisher.registr
 import { ProcessArticleUseCase } from "./application/commands/process-article.command";
 import { UpdateArticleUseCase } from "./application/commands/update-article.command";
 import { ConnectPlatformUseCase } from "./application/commands/connect-platform.command";
+import { CreateAiProviderUseCase } from "./application/commands/create-provider.command";
 import { PublishArticleUseCase } from "./application/commands/publish-article.command";
 import { GetArticleQuery, ListArticlesQuery } from "./application/queries/get-article.query";
 import { ArticleController } from "./presentation/controllers/article.controller";
 import { ConnectionController } from "./presentation/controllers/connection.controller";
+import { ProviderController } from "./presentation/controllers/provider.controller";
 import { BloggerController } from "./presentation/controllers/blogger.controller";
 import { LinkedInController } from "./presentation/controllers/linkedin.controller";
 import { PublicationController } from "./presentation/controllers/publication.controller";
@@ -54,6 +58,11 @@ const ConnectionRepoProvider = {
 const PublishRepoProvider = {
   provide: "PublishRepository",
   useClass: TypeOrmPublishRepository,
+};
+
+const AiProviderRepoProvider = {
+  provide: "AiProviderRepository",
+  useClass: TypeOrmProviderRepository,
 };
 
 const ConverterProvider = {
@@ -83,6 +92,7 @@ const EventPublisherProvider = {
         UserEntity,
         ConnectionEntity,
         PublishEntity,
+        ProviderEntity,
       ],
       synchronize: false,
     }),
@@ -91,11 +101,13 @@ const EventPublisherProvider = {
       UserEntity,
       ConnectionEntity,
       PublishEntity,
+      ProviderEntity,
     ]),
   ],
   controllers: [
     ArticleController,
     ConnectionController,
+    ProviderController,
     BloggerController,
     LinkedInController,
     PublicArticleController,
@@ -106,6 +118,7 @@ const EventPublisherProvider = {
     UserRepoProvider,
     ConnectionRepoProvider,
     PublishRepoProvider,
+    AiProviderRepoProvider,
     ConverterProvider,
     EventPublisherProvider,
     SseService,
@@ -120,6 +133,7 @@ const EventPublisherProvider = {
     ProcessArticleUseCase,
     UpdateArticleUseCase,
     ConnectPlatformUseCase,
+    CreateAiProviderUseCase,
     PublishArticleUseCase,
     GetArticleQuery,
     ListArticlesQuery,

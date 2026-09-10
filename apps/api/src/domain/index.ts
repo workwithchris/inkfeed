@@ -2,9 +2,11 @@ import type {
   AppEvent,
   PublishPlatform,
   PublishStatus,
+  AiProvider,
+  AiProviderId,
 } from "@repo/types";
 
-export type { PublishPlatform, PublishStatus };
+export type { PublishPlatform, PublishStatus, AiProvider, AiProviderId };
 
 // ─── Domain Entities (Pure - No ORM Dependencies) ─────────
 export interface Article {
@@ -212,4 +214,32 @@ export interface ArticlePublisher {
 
 export interface EventPublisher {
   publishToUser(userId: string, event: AppEvent): void;
+}
+
+// ─── AI Providers (BYOK) ──────────────────────────────────
+export interface AiProviderRepository {
+  create(data: {
+    userId: string;
+    provider: AiProviderId;
+    model: string;
+    label: string | null;
+    baseUrl: string | null;
+    apiKeyEnc: string;
+    priority: number;
+  }): Promise<AiProvider>;
+  findById(id: string): Promise<(AiProvider & { apiKeyEnc: string }) | null>;
+  findEnabledByUserId(
+    userId: string,
+  ): Promise<(AiProvider & { apiKeyEnc: string })[]>;
+  findByUserId(userId: string): Promise<AiProvider[]>;
+  update(
+    id: string,
+    data: {
+      label?: string | null;
+      model?: string;
+      enabled?: boolean;
+      priority?: number;
+    },
+  ): Promise<AiProvider>;
+  delete(id: string): Promise<void>;
 }

@@ -2,14 +2,15 @@ import type {
   AiTransformRequest,
   AiTransformResponse,
   AiSeoMeta,
+  AiRoute,
 } from "@repo/types";
 import { dirname, join } from "path";
-import { fileURLToPath } from "url";
 
 // ─── Lazy-loaded router (ESM dynamic import from CJS host) ─
-let routerPromise: Promise<{ AIRouter: new (config: unknown) => unknown }> | null = null;
 let routerInstance: unknown = null;
 let defaultRouteId: string | null = null;
+let corePromise: Promise<{ AIRouter: new (config: unknown) => unknown }> | null =
+  null;
 
 // Resolve physical path to @ai-router/core/dist/index.js
 // CJS require can't find it (no "require" export), so we locate it manually
@@ -29,14 +30,20 @@ function resolveAiRouterPath(): string {
   throw new Error("Cannot find @ai-router/core in node_modules");
 }
 
+function loadCore(): Promise<{ AIRouter: new (config: unknown) => unknown }> {
+  if (!corePromise) {
+    const modPath = resolveAiRouterPath();
+    corePromise = import(modPath) as Promise<{
+      AIRouter: new (config: unknown) => unknown;
+    }>;
+  }
+  return corePromise;
+}
+
 async function getRouter(): Promise<unknown> {
   if (routerInstance) return routerInstance;
 
-  if (!routerPromise) {
-    const modPath = resolveAiRouterPath();
-    routerPromise = import(modPath) as Promise<{ AIRouter: new (config: unknown) => unknown }>;
-  }
-  const { AIRouter } = await routerPromise;
+  const { AIRouter } = await loadCore();
 
   const routes = [];
 
@@ -100,6 +107,15 @@ async function getRouter(): Promise<unknown> {
   defaultRouteId = routes[0]!.id;
 
   return routerInstance;
+}
+
+// Build a one-off router from a caller-supplied (BYOK) route list.
+async function createRouterFromRoutes(
+  routes: AiRoute[],
+): Promise<{ router: unknown; routeId: string }> {
+  const { AIRouter } = await loadCore();
+  const router = new AIRouter({ strategy: "fallback", routes });
+  return { router, routeId: routes[0]!.id };
 }
 
 // ─── Prompt builder ───────────────────────────────────────
@@ -237,17 +253,19 @@ function parseFrontmatter(raw: string): {
 // ─── Public API ───────────────────────────────────────────
 export async function transformTranscript(
   req: AiTransformRequest,
+  routes?: AiRoute[],
 ): Promise<AiTransformResponse> {
-  const r = await getRouter();
-  const prompt = buildPrompt(req);
+  const useByok = Boolean(routes && routes.length > 0);
+  const { router: r, routeId } = useByok
+    ? await createRouterFromRoutes(routes!)
+    : { router: await getRouter(), routeId: defaultRouteId };
 
-  console.log("[ai-router] calling with route:", defaultRouteId);
-  console.log("[ai-router] OPENROUTER_API_KEY set:", !!process.env.OPENROUTER_API_KEY);
+  const prompt = buildPrompt(req);
 
   let res: unknown;
   try {
     res = await (r as { complete: (req: unknown, opts?: unknown) => Promise<unknown> }).complete({
-      model: defaultRouteId,
+      model: routeId,
       messages: [
         {
           role: "system",

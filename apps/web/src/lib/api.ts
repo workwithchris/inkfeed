@@ -166,6 +166,51 @@ export async function getLinkedInAuthUrl(): Promise<{ url: string }> {
   return apiFetch("/api/connections/linkedin/authorize");
 }
 
+// ─── AI Providers (BYOK) ──────────────────────────────────
+export interface AiProviderResponse {
+  id: string;
+  userId: string;
+  provider: string;
+  model: string;
+  label: string | null;
+  baseUrl: string | null;
+  enabled: boolean;
+  priority: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listProviders(): Promise<AiProviderResponse[]> {
+  return apiFetch("/api/providers");
+}
+
+export async function createProvider(data: {
+  provider: string;
+  model: string;
+  apiKey: string;
+  label?: string;
+  baseUrl?: string;
+}): Promise<AiProviderResponse> {
+  return apiFetch("/api/providers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateProvider(
+  id: string,
+  data: { label?: string; model?: string; enabled?: boolean; priority?: number },
+): Promise<AiProviderResponse> {
+  return apiFetch(`/api/providers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteProvider(id: string): Promise<void> {
+  await apiFetch(`/api/providers/${id}`, { method: "DELETE" });
+}
+
 // ─── Publishing ───────────────────────────────────────────
 export async function publishArticle(
   articleId: string,
