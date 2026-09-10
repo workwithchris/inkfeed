@@ -19,6 +19,8 @@ export interface ArticleJobData {
   youtubeUrl: string;
   videoId: string;
   userId: string;
+  /** Re-synthesize from the stored transcript instead of re-extracting. */
+  regenerate?: boolean;
 }
 
 export interface PublishJobData {

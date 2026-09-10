@@ -66,6 +66,12 @@ export interface ArticleRepository {
 export interface EditableContentData {
   title?: string;
   content?: string;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  slug?: string | null;
+  keywords?: string[] | null;
+  tags?: string[] | null;
+  coverImageUrl?: string | null;
 }
 
 // ─── Users ────────────────────────────────────────────────

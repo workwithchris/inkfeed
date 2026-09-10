@@ -92,9 +92,16 @@ export class TypeOrmArticleRepository implements ArticleRepository {
   }
 
   async updateEditable(id: string, data: EditableContentData): Promise<void> {
-    const patch: { title?: string; content?: string } = {};
+    const patch: Partial<ArticleEntity> = {};
     if (data.title !== undefined) patch.title = data.title;
     if (data.content !== undefined) patch.content = data.content;
+    if (data.metaTitle !== undefined) patch.metaTitle = data.metaTitle;
+    if (data.metaDescription !== undefined)
+      patch.metaDescription = data.metaDescription;
+    if (data.slug !== undefined) patch.slug = data.slug;
+    if (data.keywords !== undefined) patch.keywords = data.keywords;
+    if (data.tags !== undefined) patch.tags = data.tags;
+    if (data.coverImageUrl !== undefined) patch.coverImageUrl = data.coverImageUrl;
     if (Object.keys(patch).length === 0) return;
     await this.repo.update(id, patch);
   }

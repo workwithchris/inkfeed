@@ -127,16 +127,33 @@ async function createRouterFromRoutes(
 function buildPrompt(req: AiTransformRequest): string {
   const style = req.style || "blog";
   const styleInstructions: Record<string, string> = {
-    blog: "Write a polished blog post.",
-    newsletter: "Write a newsletter-style article with a hook intro, key takeaways, and a concise wrap-up.",
-    academic: "Write a formal academic summary with structured sections and objective tone.",
+    blog: "This is a long-form editorial article for a professional audience: authoritative, evergreen, and practical, with clear sections and real insight.",
+    newsletter: "This is a polished newsletter issue for professional readers: a strong opening hook, scannable sections, and a concise closing takeaway.",
+    academic: "This is a formal, objective piece: structured sections, measured tone, and evidence-led statements suitable for a professional or academic audience.",
   };
 
-  return `You are an expert content writer and SEO editor. Transform this YouTube video transcript into a well-structured, publish-ready ${style} article.
+  return `You are a senior editor and subject-matter writer. Turn the transcript below into an original, publication-ready ${style} article for a professional audience.
 
-Video Title: "${req.title}"
+Video title: "${req.title}"
 
 ${styleInstructions[style]}
+
+VOICE AND STANCE:
+- Write in a confident, editorial third-person voice — as an informed author explaining the subject, never as someone recapping a video.
+- Never mention or allude to the source: no "in this video", "the video", "the transcript", "the speaker", "the presenter", "the host", "the creator", or the channel name.
+- Do not attribute ideas to a person and do not use reported speech. Ban phrasing like "he said", "she states", "they explain", "he covers", "the speaker argues". Convert every such statement into direct, declarative prose.
+- Present the material as established fact and analysis, as if it were your own expertise.
+- No greetings, filler, conversational tics, sponsor or promotional mentions, or calls to subscribe.
+- Use precise, concrete language and active voice. Avoid hype, clichés, and vague or inflated claims.
+
+STRUCTURE AND QUALITY:
+- Lead with a strong, informative opening paragraph that frames the subject and why it matters.
+- Organize with clear H2 sections and H3 subsections that build logically; cover one idea per section.
+- Keep paragraphs tight (2-4 sentences) and scannable.
+- Ground the piece in specifics — examples, steps, numbers, definitions, or trade-offs drawn from the material.
+- Synthesize and reorganize the ideas; do not follow the transcript's chronological or conversational order, and drop repetition and digressions.
+- Use **bold** for key terms and concepts, bullet lists for enumeration, and blockquotes only for genuinely quotable lines.
+- End with a "Key Takeaways" section of 3-5 concise takeaways.
 
 OUTPUT FORMAT (exact, no code fences anywhere):
 Start with a YAML frontmatter block fenced by --- lines, then the Markdown article body.
@@ -158,15 +175,9 @@ tags: engineering, tutorial, productivity
 
 ARTICLE RULES:
 - Start with a compelling H1 title (# Title)
-- Use H2 (##) for main sections, H3 (###) for subsections
-- Keep paragraphs short (2-4 sentences max)
-- Use **bold** for key terms and concepts
-- Use bullet lists (- item) for enumeration
-- Use blockquotes (>) for notable quotes or highlights
-- Include a "Key Takeaways" section at the end
+- Write 800-1500 words
 - NO TL;DR section in the body (a summary is generated separately)
 - NO timestamps, NO speaker labels, NO "[Music]" or similar tags
-- Write 800-1500 words
 
 Transcript:
 ${req.transcript}`;
@@ -275,7 +286,7 @@ export async function transformTranscript(
         {
           role: "system",
           content:
-            "You are an expert content writer. Transform YouTube transcripts into polished, well-structured articles.",
+            "You are a senior editor and subject-matter writer. You turn raw transcripts into original, publication-ready articles written in an authoritative editorial voice. You never mention or attribute to a speaker, video, host, or transcript — you present the material as your own expert prose.",
         },
         { role: "user", content: prompt },
       ],

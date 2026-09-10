@@ -172,4 +172,31 @@
   .prose-article hr {
     @apply my-8 border-hairline;
   }
+
+  /* ─── Rich text editor (TipTap / ProseMirror) ────────── */
+  .editor-content .ProseMirror {
+    outline: none;
+  }
+
+  .editor-content .ProseMirror > *:first-child {
+    margin-top: 0;
+  }
+
+  .editor-content .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--faint);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .editor-content .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  .editor-content .ProseMirror a {
+    text-decoration: underline;
+  }
 }

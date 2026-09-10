@@ -11,14 +11,17 @@ import {
   createSseConnection,
   getArticle,
   listPublications,
+  regenerateArticle,
   updateArticle,
   type ArticleResponse,
   type PublicationResponse,
+  type UpdateArticleInput,
 } from "@/lib/api";
 import { stripTldr } from "@/lib/content";
 import { SeoPanel } from "./seo-panel";
 import { PublishDialog } from "./publish-dialog";
 import { PlatformIcon } from "./platform-icon";
+import { ArticleEditor } from "./article-editor";
 
 const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
@@ -47,9 +50,8 @@ export function ArticleDetail({ id }: { id: string }) {
   const { getToken } = useAuth();
 
   const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [progress, setProgress] = useState("");
+  const [confirmRegen, setConfirmRegen] = useState(false);
 
   const { data: article, isLoading } = useQuery({
     queryKey: ["article", id],
@@ -95,7 +97,7 @@ export function ArticleDetail({ id }: { id: string }) {
   }, [id, getToken, handleEvent]);
 
   const saveMutation = useMutation({
-    mutationFn: () => updateArticle(id, { title, content }),
+    mutationFn: (data: UpdateArticleInput) => updateArticle(id, data),
     onSuccess: (data) => {
       queryClient.setQueryData(["article", id], data);
       queryClient.invalidateQueries({ queryKey: ["articles"] });
@@ -103,10 +105,18 @@ export function ArticleDetail({ id }: { id: string }) {
     },
   });
 
+  const regenerateMutation = useMutation({
+    mutationFn: () => regenerateArticle(id),
+    onSuccess: () => {
+      setConfirmRegen(false);
+      setEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["article", id] });
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+    },
+  });
+
   const startEdit = () => {
-    if (!article) return;
-    setTitle(article.title);
-    setContent(article.content);
+    setConfirmRegen(false);
     setEditing(true);
   };
 
@@ -140,31 +150,35 @@ export function ArticleDetail({ id }: { id: string }) {
       </div>
 
       <div className="container-page py-10">
-        {done ? (
+        {done && editing ? (
+          <ArticleEditor
+            article={article}
+            saving={saveMutation.isPending}
+            error={
+              saveMutation.error instanceof Error
+                ? saveMutation.error.message
+                : undefined
+            }
+            onCancel={() => setEditing(false)}
+            onSave={(data) => saveMutation.mutate(data)}
+          />
+        ) : done ? (
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
             {/* Main column */}
             <div className="min-w-0">
               <p className="eyebrow">Article</p>
-              {!editing && article.coverImageUrl && (
+              {article.coverImageUrl && (
                 <img
                   src={article.coverImageUrl}
                   alt=""
                   className="mt-4 aspect-video w-full rounded-lg border border-hairline object-cover"
                 />
               )}
-              {editing ? (
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="input-default mt-4 text-heading-md"
-                />
-              ) : (
-                <h1 className="mt-3 text-display-xl text-ink">
-                  {article.title?.trim() && article.title !== "Untitled Video"
-                    ? article.title
-                    : "Untitled"}
-                </h1>
-              )}
+              <h1 className="mt-3 text-display-xl text-ink">
+                {article.title?.trim() && article.title !== "Untitled Video"
+                  ? article.title
+                  : "Untitled"}
+              </h1>
 
               <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-mute">
                 {article.channel && <span>{article.channel}</span>}
@@ -218,68 +232,69 @@ export function ArticleDetail({ id }: { id: string }) {
               )}
 
               {/* Actions */}
-              <div className="mt-6 flex items-center gap-2">
-                {editing ? (
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <button onClick={startEdit} className="btn-sm-ghost">
+                  Edit
+                </button>
+                <a
+                  href={`/article/${article.slug ?? article.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-sm-ghost"
+                >
+                  View public
+                </a>
+                <button
+                  onClick={() => router.push("/app")}
+                  className="btn-sm-ghost"
+                >
+                  Convert another
+                </button>
+                {confirmRegen ? (
                   <>
+                    <span className="text-body-sm text-mute">
+                      Overwrite with a new draft?
+                    </span>
                     <button
-                      onClick={() => setEditing(false)}
+                      onClick={() => setConfirmRegen(false)}
                       className="btn-sm-ghost"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={() => saveMutation.mutate()}
-                      disabled={saveMutation.isPending}
+                      onClick={() => regenerateMutation.mutate()}
+                      disabled={regenerateMutation.isPending}
                       className="btn-sm-primary"
                     >
-                      {saveMutation.isPending ? "Saving…" : "Save changes"}
+                      {regenerateMutation.isPending
+                        ? "Regenerating…"
+                        : "Confirm"}
                     </button>
                   </>
                 ) : (
-                  <>
-                    <button onClick={startEdit} className="btn-sm-ghost">
-                      Edit
-                    </button>
-                    <a
-                      href={`/article/${article.slug ?? article.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-sm-ghost"
-                    >
-                      View public
-                    </a>
-                    <button
-                      onClick={() => router.push("/app")}
-                      className="btn-sm-ghost"
-                    >
-                      Convert another
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setConfirmRegen(true)}
+                    className="btn-sm-ghost"
+                  >
+                    Regenerate
+                  </button>
                 )}
               </div>
 
-              {!editing && !!article.summary?.trim() && (
+              {!!article.summary?.trim() && (
                 <div className="mt-8 rounded-md border border-hairline bg-hairline-soft p-6">
                   <p className="eyebrow text-ink">Summary</p>
                   <p className="mt-3 text-body-lg text-ink">{article.summary}</p>
                 </div>
               )}
 
-              {editing ? (
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="input-default mt-8 min-h-[560px] font-mono text-[13px] leading-6"
-                />
-              ) : (
-                <article className="prose-article mt-10 max-w-none border-t border-hairline pt-10">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {stripTldr(article.content)}
-                  </ReactMarkdown>
-                </article>
-              )}
+              <article className="prose-article mt-10 max-w-none border-t border-hairline pt-10">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {stripTldr(article.content)}
+                </ReactMarkdown>
+              </article>
 
-              {!editing && <SeoPanel article={article} />}
+              <SeoPanel article={article} />
             </div>
 
             {/* Sidebar */}

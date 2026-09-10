@@ -42,27 +42,44 @@ export class ProcessArticleUseCase {
     private readonly providers: AiProviderRepository,
   ) {}
 
-  async execute(articleId: string): Promise<void> {
+  async execute(
+    articleId: string,
+    options: { reuseTranscript?: boolean } = {},
+  ): Promise<void> {
     const article = await this.articleRepo.findById(articleId);
     if (!article) {
       throw new Error(`Article ${articleId} not found`);
     }
 
-    // Step 1: Extract transcript
-    await this.articleRepo.updateStatus(articleId, "EXTRACTING");
-    this.logger.log(`Extracting transcript for article ${articleId}`);
-
     try {
-      const extracted = await this.converter.extractTranscript(
-        article.youtubeUrl,
-      );
+      let transcript: string;
+      let title: string;
 
-      await this.articleRepo.updateTranscript(articleId, {
-        title: article.title?.trim() || extracted.title,
-        transcript: extracted.transcript,
-        durationSeconds: extracted.durationSeconds,
-        channel: article.channel?.trim() || extracted.channel,
-      });
+      // Regeneration reuses the transcript already stored on the article so we
+      // don't hit the converter again.
+      if (options.reuseTranscript && article.transcript) {
+        transcript = article.transcript;
+        title = article.title?.trim() || "Untitled";
+      } else {
+        // Step 1: Extract transcript
+        await this.articleRepo.updateStatus(articleId, "EXTRACTING");
+        this.logger.log(`Extracting transcript for article ${articleId}`);
+
+        const extracted = await this.converter.extractTranscript(
+          article.youtubeUrl,
+        );
+
+        title = article.title?.trim() || extracted.title;
+
+        await this.articleRepo.updateTranscript(articleId, {
+          title,
+          transcript: extracted.transcript,
+          durationSeconds: extracted.durationSeconds,
+          channel: article.channel?.trim() || extracted.channel,
+        });
+
+        transcript = extracted.transcript;
+      }
 
       // Step 2: AI transformation
       await this.articleRepo.updateStatus(articleId, "SYNTHESIZING");
@@ -75,8 +92,8 @@ export class ProcessArticleUseCase {
       const routes = await this.resolveAiRoutes(article.userId);
 
       const aiResult = await transformTranscript({
-        transcript: extracted.transcript,
-        title: extracted.title,
+        transcript,
+        title,
         style: "blog",
       } satisfies AiTransformRequest, routes);
 

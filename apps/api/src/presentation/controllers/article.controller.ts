@@ -117,7 +117,44 @@ export class ArticleController {
     return this.updateArticle.execute(id, req.userId, {
       title: dto.title,
       content: dto.content,
+      metaTitle: dto.metaTitle,
+      metaDescription: dto.metaDescription,
+      slug: dto.slug,
+      keywords: dto.keywords,
+      tags: dto.tags,
+      coverImageUrl: dto.coverImageUrl,
     });
+  }
+
+  @Post(":id/regenerate")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async regenerate(
+    @Param("id") id: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+
+    const canReuseTranscript = !!article.transcript;
+    await this.articleRepo.updateStatus(
+      id,
+      canReuseTranscript ? "SYNTHESIZING" : "PENDING",
+    );
+
+    await articleQueue.add("process-article", {
+      articleId: id,
+      youtubeUrl: article.youtubeUrl,
+      videoId: article.videoId,
+      userId: req.userId,
+      regenerate: canReuseTranscript,
+    });
+
+    return {
+      id,
+      status: canReuseTranscript ? "SYNTHESIZING" : "PENDING",
+    };
   }
 
   @Post(":id/publish")

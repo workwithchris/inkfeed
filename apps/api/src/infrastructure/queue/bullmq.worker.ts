@@ -23,15 +23,21 @@ export class BullMQWorker implements OnModuleDestroy {
       async (job: Job) => {
         this.logger.log(`Processing job ${job.id} for article ${job.data.articleId}`);
 
+        const regenerate = job.data.regenerate === true;
+
         this.events.publishToUser(job.data.userId, {
           type: "progress",
           articleId: job.data.articleId,
-          status: "EXTRACTING",
-          message: "Starting extraction...",
+          status: regenerate ? "SYNTHESIZING" : "EXTRACTING",
+          message: regenerate
+            ? "Rewriting article..."
+            : "Starting extraction...",
           timestamp: Date.now(),
         });
 
-        await this.processArticle.execute(job.data.articleId);
+        await this.processArticle.execute(job.data.articleId, {
+          reuseTranscript: regenerate,
+        });
 
         this.events.publishToUser(job.data.userId, {
           type: "completed",

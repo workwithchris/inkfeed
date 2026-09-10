@@ -128,14 +128,31 @@ export async function deleteArticle(id: string): Promise<void> {
   await apiFetch(`/api/articles/${id}`, { method: "DELETE" });
 }
 
+export interface UpdateArticleInput {
+  title?: string;
+  content?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  slug?: string;
+  keywords?: string[];
+  tags?: string[];
+  coverImageUrl?: string;
+}
+
 export async function updateArticle(
   id: string,
-  data: { title?: string; content?: string },
+  data: UpdateArticleInput,
 ): Promise<ArticleResponse> {
   return apiFetch(`/api/articles/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
+}
+
+export async function regenerateArticle(
+  id: string,
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/articles/${id}/regenerate`, { method: "POST" });
 }
 
 // ─── Connections ──────────────────────────────────────────
