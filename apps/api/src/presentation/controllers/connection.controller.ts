@@ -1,0 +1,62 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  Req,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  UseGuards,
+  NotFoundException,
+} from "@nestjs/common";
+import { CreateConnectionDto } from "../../application/dtos/connection.dto";
+import { ConnectPlatformUseCase } from "../../application/commands/connect-platform.command";
+import type { ConnectionRepository } from "../../domain/index";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+import type { Request } from "express";
+
+@Controller("api/connections")
+@UseGuards(ClerkAuthGuard)
+export class ConnectionController {
+  constructor(
+    private readonly connectPlatform: ConnectPlatformUseCase,
+    @Inject("ConnectionRepository")
+    private readonly connections: ConnectionRepository,
+  ) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async create(
+    @Body() dto: CreateConnectionDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const connection = await this.connectPlatform.execute({
+      userId: req.userId,
+      platform: dto.platform,
+      credential: dto.credential,
+      blogId: dto.blogId,
+    });
+    return connection;
+  }
+
+  @Get()
+  async list(@Req() req: Request & { userId: string }) {
+    return this.connections.findByUserId(req.userId);
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @Param("id") id: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const connection = await this.connections.findById(id);
+    if (!connection || connection.userId !== req.userId) {
+      throw new NotFoundException(`Connection ${id} not found`);
+    }
+    await this.connections.delete(id);
+  }
+}

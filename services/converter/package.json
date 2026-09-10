@@ -1,0 +1,9 @@
+{
+  "name": "@repo/converter",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Converter managed by root docker-compose.yml'",
+    "build": "docker compose build"
+  }
+}

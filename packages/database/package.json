@@ -1,0 +1,29 @@
+{
+  "name": "@repo/database",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "db:migrate": "npm run build && typeorm migration:run -d ./dist/data-source.js",
+    "db:generate": "npm run build && typeorm migration:generate -d ./dist/data-source.js"
+  },
+  "dependencies": {
+    "@repo/types": "*",
+    "typeorm": "^0.3.20",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "ts-node": "^10.9.2",
+    "@types/node": "^22.10.5"
+  }
+}

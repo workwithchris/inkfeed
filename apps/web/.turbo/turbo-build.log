@@ -1,0 +1,37 @@
+
+> @repo/web@1.0.0 build
+> next build
+
+   ▲ Next.js 15.5.25
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 2.0s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/7) ...
+   Generating static pages (1/7) 
+   Generating static pages (3/7) 
+   Generating static pages (5/7) 
+ ✓ Generating static pages (7/7)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ƒ /                                      164 B         106 kB
+├ ƒ /_not-found                            987 B         104 kB
+├ ƒ /app                                 49.8 kB         196 kB
+├ ƒ /pricing                               164 B         106 kB
+├ ƒ /settings                            1.96 kB         115 kB
+├ ƒ /sign-in/[[...sign-in]]                394 B         141 kB
+└ ƒ /sign-up/[[...sign-up]]                394 B         141 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/18-2c82660ce7c4918d.js        46.4 kB
+  ├ chunks/87c73c54-24122e7b92478d00.js  54.2 kB
+  └ other shared chunks (total)          1.99 kB
+
+
+ƒ Middleware                             85.7 kB
+
+ƒ  (Dynamic)  server-rendered on demand
+

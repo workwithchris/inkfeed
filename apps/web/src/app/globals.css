@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+@layer base {
+  :root {
+    --ink: #171717;
+    --body: #4d4d4d;
+    --mute: #8f8f8f;
+    --faint: #a1a1a1;
+    --hairline: #ebebeb;
+    --canvas: #fafafa;
+    --elevated: #ffffff;
+    color-scheme: light;
+  }
+
+  * {
+    border-color: var(--hairline);
+  }
+
+  body {
+    @apply bg-canvas font-sans text-body antialiased;
+  }
+
+  ::selection {
+    @apply bg-ink text-white;
+  }
+}
+
+@layer components {
+  /* ─── Layout ─────────────────────────────────────────── */
+  .container-page {
+    @apply mx-auto w-full max-w-container px-6;
+  }
+
+  /* ─── Eyebrow ────────────────────────────────────────── */
+  .eyebrow {
+    @apply font-mono text-eyebrow uppercase tracking-[0.08em] text-mute;
+  }
+
+  /* ─── Buttons ────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill
+           bg-ink px-[14px] text-button-lg text-white transition-colors
+           hover:bg-black disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill
+           border border-hairline bg-elevated px-[14px] text-button-lg text-ink
+           transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-sm-primary {
+    @apply inline-flex h-8 items-center justify-center rounded-sm bg-ink px-1.5
+           text-button-md text-white transition-colors hover:bg-black;
+  }
+
+  .btn-sm-ghost {
+    @apply inline-flex h-8 items-center justify-center rounded-sm border border-hairline
+           bg-elevated px-1.5 text-button-md text-ink transition-colors hover:bg-canvas;
+  }
+
+  .btn-category {
+    @apply inline-flex h-9 items-center justify-center rounded-category border border-hairline
+           bg-elevated px-4 text-button-md text-ink transition-colors hover:bg-canvas;
+  }
+
+  .btn-icon {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full border border-hairline
+           bg-elevated text-body transition-colors hover:bg-canvas;
+  }
+
+  /* ─── Input ──────────────────────────────────────────── */
+  .input-default {
+    @apply w-full rounded-sm border border-hairline bg-elevated px-3 py-2 text-body-md
+           text-ink outline-none transition-colors placeholder:text-faint
+           focus:border-ink;
+  }
+
+  /* ─── Cards & surfaces ───────────────────────────────── */
+  .card {
+    @apply rounded-md border border-hairline bg-elevated p-6;
+  }
+
+  .card-lg {
+    @apply rounded-lg border border-hairline bg-elevated p-8;
+  }
+
+  .code-block {
+    @apply overflow-x-auto rounded-md border border-hairline bg-elevated p-4
+           font-mono text-[14px] leading-5 text-ink;
+  }
+
+  /* ─── Decorative depth ───────────────────────────────── */
+  .mesh-gradient {
+    background:
+      radial-gradient(40% 50% at 18% 28%, rgba(0, 124, 240, 0.55) 0%, transparent 70%),
+      radial-gradient(38% 48% at 42% 16%, rgba(0, 223, 216, 0.5) 0%, transparent 70%),
+      radial-gradient(46% 56% at 64% 34%, rgba(121, 40, 202, 0.42) 0%, transparent 70%),
+      radial-gradient(40% 50% at 84% 24%, rgba(255, 0, 128, 0.38) 0%, transparent 70%),
+      radial-gradient(52% 60% at 56% 74%, rgba(249, 203, 40, 0.32) 0%, transparent 70%);
+    filter: blur(48px);
+  }
+
+  /* ─── Article prose ──────────────────────────────────── */
+  .prose-article {
+    @apply text-body-lg text-body;
+  }
+
+  .prose-article h1 {
+    @apply mb-4 text-heading-lg text-ink;
+  }
+
+  .prose-article h2 {
+    @apply mb-3 mt-10 text-heading-md text-ink;
+  }
+
+  .prose-article h3 {
+    @apply mb-2 mt-8 text-[16px] font-semibold leading-6 text-ink;
+  }
+
+  .prose-article p {
+    @apply mb-4;
+  }
+
+  .prose-article strong {
+    @apply font-semibold text-ink;
+  }
+
+  .prose-article ul,
+  .prose-article ol {
+    @apply mb-4 pl-5;
+  }
+
+  .prose-article ul {
+    @apply list-disc;
+  }
+
+  .prose-article ol {
+    @apply list-decimal;
+  }
+
+  .prose-article li {
+    @apply mb-1;
+  }
+
+  .prose-article blockquote {
+    @apply my-4 border-l-2 border-hairline pl-4 text-mute;
+  }
+
+  .prose-article code {
+    @apply rounded-sm bg-hairline-soft px-1.5 py-0.5 font-mono text-[14px] text-ink;
+  }
+
+  .prose-article pre {
+    @apply mb-4 overflow-x-auto rounded-md border border-hairline bg-elevated p-4;
+  }
+
+  .prose-article pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .prose-article a {
+    @apply text-link hover:text-link-deep;
+  }
+
+  .prose-article hr {
+    @apply my-8 border-hairline;
+  }
+}
