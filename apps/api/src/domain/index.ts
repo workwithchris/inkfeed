@@ -4,9 +4,20 @@ import type {
   PublishStatus,
   AiProvider,
   AiProviderId,
+  DerivativeKind,
+  DerivativeStatus,
+  Derivative,
 } from "@repo/types";
 
-export type { PublishPlatform, PublishStatus, AiProvider, AiProviderId };
+export type {
+  PublishPlatform,
+  PublishStatus,
+  AiProvider,
+  AiProviderId,
+  DerivativeKind,
+  DerivativeStatus,
+  Derivative,
+};
 
 // ─── Domain Entities (Pure - No ORM Dependencies) ─────────
 export interface Article {
@@ -148,6 +159,28 @@ export interface PublishRepository {
       errorMessage?: string | null;
     },
   ): Promise<void>;
+}
+
+// ─── Repurposing (article derivatives) ────────────────────
+export interface DerivativeRepository {
+  create(data: {
+    articleId: string;
+    userId: string;
+    kind: DerivativeKind;
+  }): Promise<Derivative>;
+  findById(id: string): Promise<Derivative | null>;
+  findByArticleId(articleId: string): Promise<Derivative[]>;
+  updateStatus(
+    id: string,
+    status: DerivativeStatus,
+    errorMessage?: string | null,
+  ): Promise<void>;
+  updateContent(
+    id: string,
+    data: { content: string; aiModel: string },
+  ): Promise<void>;
+  updateEditable(id: string, content: string): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 export interface PublishDraft {

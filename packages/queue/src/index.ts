@@ -1,6 +1,6 @@
 import { Queue, Worker, Job } from "bullmq";
 import IORedis from "ioredis";
-import type { JobStatus } from "@repo/types";
+import type { JobStatus, DerivativeKind } from "@repo/types";
 
 // ─── Connection ───────────────────────────────────────────
 const connection = new IORedis(process.env.REDIS_URL || "redis://localhost:6379", {
@@ -11,6 +11,7 @@ const connection = new IORedis(process.env.REDIS_URL || "redis://localhost:6379"
 export const QUEUE_NAMES = {
   ARTICLES: "articles",
   PUBLISHES: "publishes",
+  DERIVATIVES: "derivatives",
 } as const;
 
 // ─── Job Data ─────────────────────────────────────────────
@@ -31,6 +32,13 @@ export interface PublishJobData {
   includeCoverImage: boolean;
   title?: string;
   coverImageUrl?: string;
+}
+
+export interface DerivativeJobData {
+  derivativeId: string;
+  articleId: string;
+  userId: string;
+  kind: DerivativeKind;
 }
 
 // ─── State Machine ────────────────────────────────────────
@@ -73,6 +81,23 @@ export const publishQueue = new Queue<PublishJobData>(QUEUE_NAMES.PUBLISHES, {
     removeOnFail: { age: 604800 },
   },
 });
+
+// ─── Derivative Queue ─────────────────────────────────────
+export const derivativeQueue = new Queue<DerivativeJobData>(
+  QUEUE_NAMES.DERIVATIVES,
+  {
+    connection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 2000,
+      },
+      removeOnComplete: { age: 86400 },
+      removeOnFail: { age: 604800 },
+    },
+  },
+);
 
 // ─── Worker ───────────────────────────────────────────────
 export function createArticleWorker(

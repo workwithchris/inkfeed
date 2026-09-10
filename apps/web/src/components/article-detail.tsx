@@ -18,10 +18,12 @@ import {
   type UpdateArticleInput,
 } from "@/lib/api";
 import { stripTldr } from "@/lib/content";
+import { tweetIntentUrl } from "@/lib/share";
 import { SeoPanel } from "./seo-panel";
 import { PublishDialog } from "./publish-dialog";
 import { PlatformIcon } from "./platform-icon";
 import { ArticleEditor } from "./article-editor";
+import { DerivativePanel } from "./derivative-panel";
 
 const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
@@ -232,53 +234,94 @@ export function ArticleDetail({ id }: { id: string }) {
               )}
 
               {/* Actions */}
-              <div className="mt-6 flex flex-wrap items-center gap-2">
-                <button onClick={startEdit} className="btn-sm-ghost">
-                  Edit
-                </button>
-                <a
-                  href={`/article/${article.slug ?? article.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-sm-ghost"
-                >
-                  View public
-                </a>
-                <button
-                  onClick={() => router.push("/app")}
-                  className="btn-sm-ghost"
-                >
-                  Convert another
-                </button>
-                {confirmRegen ? (
-                  <>
-                    <span className="text-body-sm text-mute">
-                      Overwrite with a new draft?
-                    </span>
-                    <button
-                      onClick={() => setConfirmRegen(false)}
-                      className="btn-sm-ghost"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => regenerateMutation.mutate()}
-                      disabled={regenerateMutation.isPending}
-                      className="btn-sm-primary"
-                    >
-                      {regenerateMutation.isPending
-                        ? "Regenerating…"
-                        : "Confirm"}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setConfirmRegen(true)}
+              <div className="mt-6 flex flex-col gap-3 rounded-md border border-hairline bg-elevated p-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={startEdit} className="btn-sm-primary">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                    Edit article
+                  </button>
+                  <a
+                    href={`/article/${article.slug ?? article.id}`}
+                    target="_blank"
+                    rel="noreferrer"
                     className="btn-sm-ghost"
                   >
-                    Regenerate
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M14 5h5v5M19 5l-8 8M19 14v5H5V5h5" />
+                    </svg>
+                    View public
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const origin = window.location.origin;
+                      const url = `${origin}/article/${article.slug ?? article.id}`;
+                      const text =
+                        article.metaTitle?.trim() ||
+                        article.title?.trim() ||
+                        "New article";
+                      window.open(
+                        tweetIntentUrl(text, url),
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    }}
+                    className="btn-sm-ghost"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                    Share
                   </button>
-                )}
+                  <button
+                    onClick={() => router.push("/app")}
+                    className="btn-sm-ghost"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Convert another
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 sm:border-l sm:border-hairline sm:pl-3">
+                  {confirmRegen ? (
+                    <>
+                      <span className="px-1 text-body-sm text-mute">
+                        Overwrite with a new draft?
+                      </span>
+                      <button
+                        onClick={() => setConfirmRegen(false)}
+                        className="btn-sm-ghost"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => regenerateMutation.mutate()}
+                        disabled={regenerateMutation.isPending}
+                        className="btn-sm-primary"
+                      >
+                        {regenerateMutation.isPending
+                          ? "Regenerating…"
+                          : "Confirm"}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmRegen(true)}
+                      className="btn-sm-ghost"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+                        <path d="M21 3v5h-5" />
+                      </svg>
+                      Regenerate
+                    </button>
+                  )}
+                </div>
               </div>
 
               {!!article.summary?.trim() && (
@@ -293,6 +336,8 @@ export function ArticleDetail({ id }: { id: string }) {
                   {stripTldr(article.content)}
                 </ReactMarkdown>
               </article>
+
+              <DerivativePanel articleId={article.id} />
 
               <SeoPanel article={article} />
             </div>

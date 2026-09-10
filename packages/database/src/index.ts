@@ -6,3 +6,8 @@ export type { PublishPlatform } from "./entity/ConnectionEntity.js";
 export { PublishEntity } from "./entity/PublishEntity.js";
 export type { PublishStatus } from "./entity/PublishEntity.js";
 export { ProviderEntity } from "./entity/ProviderEntity.js";
+export { DerivativeEntity } from "./entity/DerivativeEntity.js";
+export type {
+  DerivativeKind,
+  DerivativeStatus,
+} from "./entity/DerivativeEntity.js";

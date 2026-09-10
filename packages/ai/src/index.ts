@@ -1,8 +1,10 @@
 import type {
   AiTransformRequest,
   AiTransformResponse,
+  AiDerivativeResponse,
   AiSeoMeta,
   AiRoute,
+  DerivativeKind,
 } from "@repo/types";
 import { dirname, join } from "path";
 import { pathToFileURL } from "url";
@@ -266,33 +268,101 @@ function parseFrontmatter(raw: string): {
   return { content, meta };
 }
 
-// ─── Public API ───────────────────────────────────────────
-export async function transformTranscript(
+// ─── Derivative prompt builder ────────────────────────────
+function buildDerivativePrompt(
   req: AiTransformRequest,
+  kind: DerivativeKind,
+): { system: string; prompt: string } {
+  const noAttribution = `Source title: "${req.title}".
+
+VOICE:
+- Write in a confident, first-person-plural or neutral editorial voice, as an expert on the subject.
+- Never mention or allude to the source video, transcript, speaker, host, or channel. Do not attribute ideas to a person or use reported speech.
+- No sponsor or promotional mentions and no calls to subscribe.
+- Use precise, concrete language; avoid hype and clichés.
+
+Source transcript:
+${req.transcript}`;
+
+  switch (kind) {
+    case "tweet_thread":
+      return {
+        system:
+          "You are a social media strategist who turns raw source material into high-engagement Twitter/X threads.",
+        prompt: `Turn the source material into a Twitter/X thread.
+
+${noAttribution}
+
+OUTPUT FORMAT (exact):
+- Output ONLY the thread. No preamble, no title, no frontmatter, no code fences.
+- 8-12 tweets, each numbered like "1/", "2/", etc.
+- Every tweet must be 280 characters or fewer.
+- The first tweet is a strong curiosity-driven hook.
+- Use short lines and line breaks for scannability; at most one hashtag, only if natural.
+- The final tweet is a concise takeaway, optionally with a soft follow prompt.`,
+      };
+    case "newsletter":
+      return {
+        system:
+          "You are a newsletter writer who turns raw source material into a polished, skimmable email issue.",
+        prompt: `Turn the source material into a newsletter issue.
+
+${noAttribution}
+
+OUTPUT FORMAT (exact):
+- Start with a "Subject:" line, then a short preview text line, then the body.
+- Open with a strong hook paragraph; keep paragraphs to 2-3 sentences.
+- Organize with clear Markdown H2/H3 sections and bullet lists where useful.
+- Include one blockquote pull-quote only if genuinely quotable.
+- Close with a short "The takeaway" paragraph and a light sign-off.
+- Write 500-900 words. No code fences.`,
+      };
+    case "video_script":
+      return {
+        system:
+          "You are a YouTube scriptwriter who turns raw source material into a tight, watchable video script.",
+        prompt: `Turn the source material into a YouTube video script.
+
+${noAttribution}
+
+OUTPUT FORMAT (exact):
+- Use Markdown section headings for each beat: "## Hook", "## Intro", "## <topic>", "## Outro".
+- Under each section, write spoken narration in short, natural sentences.
+- Add on-screen text and B-roll cues in square brackets, e.g. [ON SCREEN: ...] and [B-ROLL: ...].
+- Include a clear hook in the first 15 seconds and a call-to-action in the outro.
+- Aim for 700-1200 spoken words. No code fences.`,
+      };
+  }
+}
+
+// ─── Low-level completion ─────────────────────────────────
+async function complete(
+  system: string,
+  prompt: string,
+  options: { temperature?: number; maxTokens?: number },
   routes?: AiRoute[],
-): Promise<AiTransformResponse> {
+): Promise<{ raw: string; model: string }> {
   const useByok = Boolean(routes && routes.length > 0);
   const { router: r, routeId } = useByok
     ? await createRouterFromRoutes(routes!)
     : { router: await getRouter(), routeId: defaultRouteId };
 
-  const prompt = buildPrompt(req);
-
   let res: unknown;
   try {
-    res = await (r as { complete: (req: unknown, opts?: unknown) => Promise<unknown> }).complete({
-      model: routeId,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a senior editor and subject-matter writer. You turn raw transcripts into original, publication-ready articles written in an authoritative editorial voice. You never mention or attribute to a speaker, video, host, or transcript — you present the material as your own expert prose.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 4096,
-    }, { deadlineMs: 60_000 });
+    res = await (
+      r as { complete: (req: unknown, opts?: unknown) => Promise<unknown> }
+    ).complete(
+      {
+        model: routeId,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: prompt },
+        ],
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 4096,
+      },
+      { deadlineMs: 60_000 },
+    );
   } catch (err) {
     console.error("[ai-router] complete() failed:", err);
     throw err;
@@ -308,6 +378,28 @@ export async function transformTranscript(
   const raw =
     typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
 
+  // Reasoning-style models occasionally finish with an empty message (all
+  // tokens spent on reasoning). Treat that as failure so the queue retries
+  // instead of persisting blank content.
+  if (!raw.trim()) {
+    throw new Error("AI provider returned an empty response; retrying");
+  }
+
+  return { raw, model: data.model ?? data.provider ?? "unknown" };
+}
+
+// ─── Public API ───────────────────────────────────────────
+export async function transformTranscript(
+  req: AiTransformRequest,
+  routes?: AiRoute[],
+): Promise<AiTransformResponse> {
+  const { raw, model } = await complete(
+    "You are a senior editor and subject-matter writer. You turn raw transcripts into original, publication-ready articles written in an authoritative editorial voice. You never mention or attribute to a speaker, video, host, or transcript — you present the material as your own expert prose.",
+    buildPrompt(req),
+    { temperature: 0.7, maxTokens: 4096 },
+    routes,
+  );
+
   const { content, meta } = parseFrontmatter(raw);
   const summary = meta.metaDescription?.trim() || extractSummary(content) || "";
 
@@ -322,7 +414,30 @@ export async function transformTranscript(
   return {
     content,
     summary,
-    model: data.model ?? data.provider ?? "unknown",
+    model,
     seo,
   };
+}
+
+// Transform a transcript into a repurposed format (tweet thread, newsletter,
+// or video script). Returns plain content — no SEO frontmatter is generated.
+export async function transformToFormat(
+  req: AiTransformRequest,
+  kind: DerivativeKind,
+  routes?: AiRoute[],
+): Promise<AiDerivativeResponse> {
+  const { system, prompt } = buildDerivativePrompt(req, kind);
+  const { raw, model } = await complete(
+    system,
+    prompt,
+    { temperature: 0.7, maxTokens: 4096 },
+    routes,
+  );
+
+  const content = raw
+    .replace(/^\s*```[a-z]*\n/i, "")
+    .replace(/\n```\s*$/i, "")
+    .trim();
+
+  return { content, model };
 }

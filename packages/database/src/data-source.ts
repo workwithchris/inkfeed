@@ -5,6 +5,7 @@ import { ArticleEntity } from "./entity/ArticleEntity.js";
 import { ConnectionEntity } from "./entity/ConnectionEntity.js";
 import { PublishEntity } from "./entity/PublishEntity.js";
 import { ProviderEntity } from "./entity/ProviderEntity.js";
+import { DerivativeEntity } from "./entity/DerivativeEntity.js";
 
 // Running from dist (compiled) uses .js migrations; from ts-node uses .ts.
 const migrationExt = __filename.endsWith(".ts") ? "ts" : "js";
@@ -18,6 +19,13 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || "youtube_to_article",
   synchronize: false,
   logging: process.env.NODE_ENV !== "production",
-  entities: [UserEntity, ArticleEntity, ConnectionEntity, PublishEntity, ProviderEntity],
+  entities: [
+    UserEntity,
+    ArticleEntity,
+    ConnectionEntity,
+    PublishEntity,
+    ProviderEntity,
+    DerivativeEntity,
+  ],
   migrations: [join(__dirname, "migration", `*.${migrationExt}`)],
 });

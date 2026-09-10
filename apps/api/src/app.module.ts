@@ -6,15 +6,19 @@ import {
   ConnectionEntity,
   PublishEntity,
   ProviderEntity,
+  DerivativeEntity,
 } from "@repo/database";
 import { TypeOrmArticleRepository } from "./infrastructure/database/typeorm-article.repository";
 import { TypeOrmUserRepository } from "./infrastructure/database/typeorm-user.repository";
 import { TypeOrmConnectionRepository } from "./infrastructure/database/typeorm-connection.repository";
 import { TypeOrmPublishRepository } from "./infrastructure/database/typeorm-publish.repository";
 import { TypeOrmProviderRepository } from "./infrastructure/database/typeorm-provider.repository";
+import { TypeOrmDerivativeRepository } from "./infrastructure/database/typeorm-derivative.repository";
 import { HttpConverterService } from "./infrastructure/http/converter.service";
+import { AiRouteResolver } from "./infrastructure/ai/ai-route-resolver";
 import { BullMQWorker } from "./infrastructure/queue/bullmq.worker";
 import { PublishWorker } from "./infrastructure/queue/publish.worker";
+import { DerivativeWorker } from "./infrastructure/queue/derivative.worker";
 import { AuthService } from "./infrastructure/auth/auth.service";
 import { ClerkAuthGuard } from "./infrastructure/auth/clerk-auth.guard";
 import { DevtoPublisher } from "./infrastructure/publishers/devto.publisher";
@@ -24,6 +28,7 @@ import { LinkedInPublisher } from "./infrastructure/publishers/linkedin.publishe
 import { GitHubPublisher } from "./infrastructure/publishers/github.publisher";
 import { PublisherRegistry } from "./infrastructure/publishers/publisher.registry";
 import { ProcessArticleUseCase } from "./application/commands/process-article.command";
+import { GenerateDerivativeUseCase } from "./application/commands/generate-derivative.command";
 import { UpdateArticleUseCase } from "./application/commands/update-article.command";
 import { ConnectPlatformUseCase } from "./application/commands/connect-platform.command";
 import { CreateAiProviderUseCase } from "./application/commands/create-provider.command";
@@ -60,6 +65,11 @@ const PublishRepoProvider = {
   useClass: TypeOrmPublishRepository,
 };
 
+const DerivativeRepoProvider = {
+  provide: "DerivativeRepository",
+  useClass: TypeOrmDerivativeRepository,
+};
+
 const AiProviderRepoProvider = {
   provide: "AiProviderRepository",
   useClass: TypeOrmProviderRepository,
@@ -93,6 +103,7 @@ const EventPublisherProvider = {
         ConnectionEntity,
         PublishEntity,
         ProviderEntity,
+        DerivativeEntity,
       ],
       synchronize: false,
     }),
@@ -102,6 +113,7 @@ const EventPublisherProvider = {
       ConnectionEntity,
       PublishEntity,
       ProviderEntity,
+      DerivativeEntity,
     ]),
   ],
   controllers: [
@@ -118,6 +130,7 @@ const EventPublisherProvider = {
     UserRepoProvider,
     ConnectionRepoProvider,
     PublishRepoProvider,
+    DerivativeRepoProvider,
     AiProviderRepoProvider,
     ConverterProvider,
     EventPublisherProvider,
@@ -130,7 +143,9 @@ const EventPublisherProvider = {
     LinkedInPublisher,
     GitHubPublisher,
     PublisherRegistry,
+    AiRouteResolver,
     ProcessArticleUseCase,
+    GenerateDerivativeUseCase,
     UpdateArticleUseCase,
     ConnectPlatformUseCase,
     CreateAiProviderUseCase,
@@ -139,6 +154,7 @@ const EventPublisherProvider = {
     ListArticlesQuery,
     BullMQWorker,
     PublishWorker,
+    DerivativeWorker,
   ],
 })
 export class AppModule {}

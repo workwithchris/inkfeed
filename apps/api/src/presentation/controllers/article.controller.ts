@@ -22,16 +22,21 @@ import {
   UpdateArticleDto,
   PublishArticleDto,
 } from "../../application/dtos/connection.dto";
+import {
+  CreateDerivativeDto,
+  UpdateDerivativeDto,
+} from "../../application/dtos/derivative.dto";
 import { GetArticleQuery, ListArticlesQuery } from "../../application/queries/get-article.query";
 import { UpdateArticleUseCase } from "../../application/commands/update-article.command";
 import type {
   ArticleRepository,
   ConnectionRepository,
+  DerivativeRepository,
   PublishRepository,
 } from "../../domain/index";
 import { SseService } from "../sse/sse.service";
 import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
-import { articleQueue, publishQueue } from "@repo/queue";
+import { articleQueue, derivativeQueue, publishQueue } from "@repo/queue";
 import type { Request } from "express";
 
 async function fetchYouTubeMetadata(
@@ -64,6 +69,8 @@ export class ArticleController {
     @Inject("ConnectionRepository")
     private readonly connectionRepo: ConnectionRepository,
     @Inject("PublishRepository") private readonly publishRepo: PublishRepository,
+    @Inject("DerivativeRepository")
+    private readonly derivativeRepo: DerivativeRepository,
     private readonly sseService: SseService,
   ) {}
 
@@ -204,6 +211,84 @@ export class ArticleController {
       throw new NotFoundException(`Article ${id} not found`);
     }
     return this.publishRepo.findByArticleId(id);
+  }
+
+  // ─── Repurposing (derivatives) ─────────────────────────
+  @Post(":id/derivatives")
+  @HttpCode(HttpStatus.CREATED)
+  async createDerivative(
+    @Param("id") id: string,
+    @Body() dto: CreateDerivativeDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+
+    const derivative = await this.derivativeRepo.create({
+      articleId: id,
+      userId: req.userId,
+      kind: dto.kind,
+    });
+
+    await derivativeQueue.add("generate-derivative", {
+      derivativeId: derivative.id,
+      articleId: id,
+      userId: req.userId,
+      kind: dto.kind,
+    });
+
+    return { id: derivative.id, status: derivative.status };
+  }
+
+  @Get(":id/derivatives")
+  async listDerivatives(
+    @Param("id") id: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+    return this.derivativeRepo.findByArticleId(id);
+  }
+
+  @Patch(":id/derivatives/:derivativeId")
+  async editDerivative(
+    @Param("id") id: string,
+    @Param("derivativeId") derivativeId: string,
+    @Body() dto: UpdateDerivativeDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const derivative = await this.derivativeRepo.findById(derivativeId);
+    if (
+      !derivative ||
+      derivative.articleId !== id ||
+      derivative.userId !== req.userId
+    ) {
+      throw new NotFoundException(`Derivative ${derivativeId} not found`);
+    }
+    await this.derivativeRepo.updateEditable(derivativeId, dto.content);
+    return { id: derivativeId, status: derivative.status };
+  }
+
+  @Delete(":id/derivatives/:derivativeId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeDerivative(
+    @Param("id") id: string,
+    @Param("derivativeId") derivativeId: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const derivative = await this.derivativeRepo.findById(derivativeId);
+    if (
+      !derivative ||
+      derivative.articleId !== id ||
+      derivative.userId !== req.userId
+    ) {
+      throw new NotFoundException(`Derivative ${derivativeId} not found`);
+    }
+    await this.derivativeRepo.delete(derivativeId);
   }
 
   @Delete(":id")

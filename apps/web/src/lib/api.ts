@@ -74,10 +74,17 @@ export interface PublicArticleResponse {
   createdAt: string;
 }
 
+export type PublishPlatformId =
+  | "devto"
+  | "hashnode"
+  | "blogger"
+  | "linkedin"
+  | "github";
+
 export interface ConnectionResponse {
   id: string;
   userId: string;
-  platform: "devto" | "hashnode" | "blogger" | "linkedin" | "github";
+  platform: PublishPlatformId;
   blogId: string | null;
   blogName: string | null;
   createdAt: string;
@@ -88,7 +95,7 @@ export interface PublicationResponse {
   id: string;
   articleId: string;
   connectionId: string;
-  platform: "devto" | "hashnode" | "blogger" | "linkedin" | "github";
+  platform: PublishPlatformId;
   status: string;
   externalId: string | null;
   externalUrl: string | null;
@@ -161,7 +168,7 @@ export async function listConnections(): Promise<ConnectionResponse[]> {
 }
 
 export async function createConnection(data: {
-  platform: "devto" | "hashnode" | "blogger" | "linkedin" | "github";
+  platform: PublishPlatformId;
   credential: string;
   blogId?: string;
 }): Promise<ConnectionResponse> {
@@ -254,6 +261,57 @@ export async function listPublications(
 
 export async function listAllPublications(): Promise<PublicationResponse[]> {
   return apiFetch("/api/publications");
+}
+
+// ─── Repurposing (derivatives) ────────────────────────────
+export type DerivativeKind = "tweet_thread" | "newsletter" | "video_script";
+
+export interface DerivativeResponse {
+  id: string;
+  articleId: string;
+  kind: DerivativeKind;
+  status: "PENDING" | "SYNTHESIZING" | "COMPLETED" | "FAILED";
+  content: string | null;
+  aiModel: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listDerivatives(
+  articleId: string,
+): Promise<DerivativeResponse[]> {
+  return apiFetch(`/api/articles/${articleId}/derivatives`);
+}
+
+export async function createDerivative(
+  articleId: string,
+  kind: DerivativeKind,
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/articles/${articleId}/derivatives`, {
+    method: "POST",
+    body: JSON.stringify({ kind }),
+  });
+}
+
+export async function updateDerivative(
+  articleId: string,
+  derivativeId: string,
+  content: string,
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/articles/${articleId}/derivatives/${derivativeId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function deleteDerivative(
+  articleId: string,
+  derivativeId: string,
+): Promise<void> {
+  await apiFetch(`/api/articles/${articleId}/derivatives/${derivativeId}`, {
+    method: "DELETE",
+  });
 }
 
 export function createSseConnection(

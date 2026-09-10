@@ -173,7 +173,85 @@ export type PublishSseEvent =
   | PublishCompletedEvent
   | PublishFailedEvent;
 
-export type AppEvent = SseEvent | PublishSseEvent;
+// ─── Repurposing (article derivatives) ────────────────────
+export const DERIVATIVE_KINDS = [
+  "tweet_thread",
+  "newsletter",
+  "video_script",
+] as const;
+
+export type DerivativeKind = (typeof DERIVATIVE_KINDS)[number];
+
+export type DerivativeStatus =
+  | "PENDING"
+  | "SYNTHESIZING"
+  | "COMPLETED"
+  | "FAILED";
+
+export interface Derivative {
+  id: string;
+  articleId: string;
+  userId: string;
+  kind: DerivativeKind;
+  status: DerivativeStatus;
+  content: string | null;
+  aiModel: string | null;
+  errorMessage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateDerivativeDto {
+  kind: DerivativeKind;
+}
+
+export interface UpdateDerivativeDto {
+  content: string;
+}
+
+export interface DerivativeResponseDto {
+  id: string;
+  articleId: string;
+  kind: DerivativeKind;
+  status: DerivativeStatus;
+  content: string | null;
+  aiModel: string | null;
+  errorMessage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ─── SSE Events (repurposing) ─────────────────────────────
+export interface DerivativeProgressEvent {
+  type: "derivative-progress";
+  articleId: string;
+  derivativeId: string;
+  status: DerivativeStatus;
+  message: string;
+  timestamp: number;
+}
+
+export interface DerivativeCompletedEvent {
+  type: "derivative-completed";
+  articleId: string;
+  derivativeId: string;
+  timestamp: number;
+}
+
+export interface DerivativeFailedEvent {
+  type: "derivative-failed";
+  articleId: string;
+  derivativeId: string;
+  error: string;
+  timestamp: number;
+}
+
+export type DerivativeSseEvent =
+  | DerivativeProgressEvent
+  | DerivativeCompletedEvent
+  | DerivativeFailedEvent;
+
+export type AppEvent = SseEvent | PublishSseEvent | DerivativeSseEvent;
 
 // ─── Converter Service ────────────────────────────────────
 export interface ExtractRequest {
@@ -207,6 +285,11 @@ export interface AiTransformResponse {
   summary: string;
   model: string;
   seo: AiSeoMeta;
+}
+
+export interface AiDerivativeResponse {
+  content: string;
+  model: string;
 }
 
 // ─── AI Providers (BYOK) ──────────────────────────────────
