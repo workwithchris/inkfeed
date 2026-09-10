@@ -7,10 +7,20 @@ import {
   listConnections,
   listPublications,
   publishArticle,
+  type ArticleResponse,
   type ConnectionResponse,
   type PublicationResponse,
+  type PublishOptions,
 } from "@/lib/api";
 import { PlatformIcon } from "./platform-icon";
+
+type ImageMode = "keep" | "replace" | "none";
+
+const IMAGE_MODES: { id: ImageMode; label: string }[] = [
+  { id: "keep", label: "Keep" },
+  { id: "replace", label: "Replace" },
+  { id: "none", label: "Remove" },
+];
 
 const STATUS_DOT: Record<string, string> = {
   PENDING: "bg-faint",
@@ -27,10 +37,32 @@ function platformLabel(platform: PublicationResponse["platform"]): string {
   return "Blogger";
 }
 
-export function PublishDialog({ articleId }: { articleId: string }) {
+export function PublishDialog({ article }: { article: ArticleResponse }) {
+  const articleId = article.id;
   const queryClient = useQueryClient();
   const [connectionId, setConnectionId] = useState("");
   const [error, setError] = useState("");
+  const [title, setTitle] = useState(article.title ?? "");
+  const [imageMode, setImageMode] = useState<ImageMode>(
+    article.coverImageUrl ? "keep" : "none",
+  );
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+
+  const replaceInvalid = imageMode === "replace" && !coverImageUrl.trim();
+
+  const publishOptions = (): PublishOptions => ({
+    includeCoverImage: imageMode !== "none",
+    title: title.trim() || undefined,
+    coverImageUrl:
+      imageMode === "replace" ? coverImageUrl.trim() : undefined,
+  });
+
+  const imagePreview =
+    imageMode === "keep"
+      ? article.coverImageUrl
+      : imageMode === "replace"
+        ? coverImageUrl.trim() || null
+        : null;
 
   const { data: connections } = useQuery({
     queryKey: ["connections"],
@@ -67,7 +99,8 @@ export function PublishDialog({ articleId }: { articleId: string }) {
   };
 
   const publishMutation = useMutation({
-    mutationFn: () => publishArticle(articleId, connectionId),
+    mutationFn: () =>
+      publishArticle(articleId, connectionId, publishOptions()),
     onSuccess: () => {
       setError("");
       invalidate();
@@ -78,7 +111,9 @@ export function PublishDialog({ articleId }: { articleId: string }) {
   const publishAllMutation = useMutation({
     mutationFn: async () => {
       const results = await Promise.allSettled(
-        (publishableConnections ?? []).map((c) => publishArticle(articleId, c.id)),
+        (publishableConnections ?? []).map((c) =>
+          publishArticle(articleId, c.id, publishOptions()),
+        ),
       );
       const failed = results.filter((r) => r.status === "rejected").length;
       if (failed > 0) {
@@ -180,9 +215,79 @@ export function PublishDialog({ articleId }: { articleId: string }) {
             })}
           </div>
 
+          <div className="flex flex-col gap-3 border-t border-hairline pt-4">
+            <p className="eyebrow">Before you publish</p>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-body-sm text-mute">Title</span>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Draft title"
+                disabled={inFlight}
+                className="input-default"
+              />
+            </label>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-body-sm text-mute">Cover image</span>
+              <div
+                role="radiogroup"
+                aria-label="Cover image"
+                className="flex gap-1 rounded-md border border-hairline bg-canvas p-1"
+              >
+                {IMAGE_MODES.filter(
+                  (mode) => mode.id !== "keep" || !!article.coverImageUrl,
+                ).map((mode) => {
+                  const active = imageMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setImageMode(mode.id)}
+                      disabled={inFlight}
+                      className={`flex-1 rounded-sm px-2 py-1 text-button-md transition-colors ${
+                        active
+                          ? "bg-ink text-white"
+                          : "text-body hover:bg-elevated"
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {imageMode === "replace" && (
+                <input
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  placeholder="https://…/cover.jpg"
+                  disabled={inFlight}
+                  className="input-default"
+                />
+              )}
+
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt=""
+                  className="aspect-video w-full rounded-md border border-hairline object-cover"
+                />
+              )}
+            </div>
+          </div>
+
           <button
             onClick={() => publishMutation.mutate()}
-            disabled={!connectionId || publishMutation.isPending || inFlight}
+            disabled={
+              !connectionId ||
+              replaceInvalid ||
+              publishMutation.isPending ||
+              inFlight
+            }
             className="btn-sm-primary w-full"
           >
             {inFlight ? "Publishing…" : "Publish as draft"}
@@ -191,7 +296,11 @@ export function PublishDialog({ articleId }: { articleId: string }) {
           {publishableConnections.length > 1 && (
             <button
               onClick={() => publishAllMutation.mutate()}
-              disabled={publishAllMutation.isPending || inFlight}
+              disabled={
+                replaceInvalid ||
+                publishAllMutation.isPending ||
+                inFlight
+              }
               className="btn-sm-ghost w-full"
             >
               {publishAllMutation.isPending

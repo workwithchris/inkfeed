@@ -37,4 +37,12 @@ export class PublishArticleDto {
   @IsOptional()
   @IsBoolean()
   includeCoverImage?: boolean;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  coverImageUrl?: string;
 }

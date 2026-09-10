@@ -284,7 +284,7 @@ export function ArticleDetail({ id }: { id: string }) {
 
             {/* Sidebar */}
             <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
-              <PublishDialog articleId={article.id} />
+              <PublishDialog article={article} />
 
               <div className="card">
                 <p className="eyebrow">Details</p>

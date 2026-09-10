@@ -150,6 +150,8 @@ export class ArticleController {
       connectionId: dto.connectionId,
       userId: req.userId,
       includeCoverImage: dto.includeCoverImage ?? true,
+      title: dto.title,
+      coverImageUrl: dto.coverImageUrl,
     });
 
     return { publicationId: publication.id, status: publication.status };

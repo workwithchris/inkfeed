@@ -260,4 +260,5 @@ export interface AiRoute {
   model: string;
   apiKey: string;
   baseUrl?: string;
+  headers?: Record<string, string>;
 }

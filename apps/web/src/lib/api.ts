@@ -212,14 +212,20 @@ export async function deleteProvider(id: string): Promise<void> {
 }
 
 // ─── Publishing ───────────────────────────────────────────
+export interface PublishOptions {
+  includeCoverImage?: boolean;
+  title?: string;
+  coverImageUrl?: string;
+}
+
 export async function publishArticle(
   articleId: string,
   connectionId: string,
-  includeCoverImage = true,
+  options: PublishOptions = {},
 ): Promise<{ publicationId: string; status: string }> {
   return apiFetch(`/api/articles/${articleId}/publish`, {
     method: "POST",
-    body: JSON.stringify({ connectionId, includeCoverImage }),
+    body: JSON.stringify({ connectionId, ...options }),
   });
 }
 

@@ -5,6 +5,7 @@ import type {
   AiRoute,
 } from "@repo/types";
 import { dirname, join } from "path";
+import { pathToFileURL } from "url";
 
 // ─── Lazy-loaded router (ESM dynamic import from CJS host) ─
 let routerInstance: unknown = null;
@@ -17,14 +18,16 @@ let corePromise: Promise<{ AIRouter: new (config: unknown) => unknown }> | null 
 function resolveAiRouterPath(): string {
   // Walk up from this file to find node_modules/@ai-router/core
   let dir = __dirname;
-  while (dir !== "/") {
+  for (;;) {
     const candidate = join(dir, "node_modules", "@ai-router", "core", "dist", "index.js");
     try {
       // Verify file exists
       require("fs").accessSync(candidate);
       return candidate;
     } catch {
-      dir = dirname(dir);
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
     }
   }
   throw new Error("Cannot find @ai-router/core in node_modules");
@@ -33,7 +36,9 @@ function resolveAiRouterPath(): string {
 function loadCore(): Promise<{ AIRouter: new (config: unknown) => unknown }> {
   if (!corePromise) {
     const modPath = resolveAiRouterPath();
-    corePromise = import(modPath) as Promise<{
+    // Dynamic import() needs a file:// URL on Windows (a bare C:\ path is
+    // rejected by the ESM loader as an unsupported protocol).
+    corePromise = import(pathToFileURL(modPath).href) as Promise<{
       AIRouter: new (config: unknown) => unknown;
     }>;
   }

@@ -22,8 +22,14 @@ export class PublishWorker implements OnModuleDestroy {
     this.worker = new Worker<PublishJobData>(
       "publishes",
       async (job: Job<PublishJobData>) => {
-        const { userId, articleId, publicationId, includeCoverImage } =
-          job.data;
+        const {
+          userId,
+          articleId,
+          publicationId,
+          includeCoverImage,
+          title,
+          coverImageUrl,
+        } = job.data;
 
         this.events.publishToUser(userId, {
           type: "publish-progress",
@@ -34,10 +40,11 @@ export class PublishWorker implements OnModuleDestroy {
           timestamp: Date.now(),
         });
 
-        const result = await this.publishArticle.execute(
-          publicationId,
+        const result = await this.publishArticle.execute(publicationId, {
           includeCoverImage,
-        );
+          title,
+          coverImageUrl,
+        });
 
         this.events.publishToUser(userId, {
           type: "publish-completed",

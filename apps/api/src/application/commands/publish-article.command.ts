@@ -13,6 +13,12 @@ export interface PublishOutcome {
   url: string;
 }
 
+export interface PublishOptions {
+  includeCoverImage?: boolean;
+  title?: string | null;
+  coverImageUrl?: string | null;
+}
+
 // Dev.to rejects canonical URLs that aren't publicly reachable (e.g. localhost),
 // so omit the field entirely in local dev instead of failing the publish.
 function buildCanonicalUrl(slugOrId: string): string | null {
@@ -47,7 +53,7 @@ export class PublishArticleUseCase {
 
   async execute(
     publicationId: string,
-    includeCoverImage = true,
+    options: PublishOptions = {},
   ): Promise<PublishOutcome> {
     const publication = await this.publications.findById(publicationId);
     if (!publication) {
@@ -74,14 +80,22 @@ export class PublishArticleUseCase {
         article.slug ?? article.id,
       );
 
+      // Per-publish overrides let the user tweak the draft without mutating
+      // the stored article. Fall back to the generated values.
+      const title = options.title?.trim() || article.title;
+      const coverImageUrl =
+        options.includeCoverImage === false
+          ? null
+          : options.coverImageUrl?.trim() || article.coverImageUrl;
+
       const result = await publisher.publish(credential, connection.blogId, {
-        title: article.title,
+        title,
         content: article.content,
         summary: article.summary,
         tags: article.tags ?? [],
         slug: article.slug,
         canonicalUrl,
-        coverImageUrl: includeCoverImage ? article.coverImageUrl : null,
+        coverImageUrl,
       });
 
       await this.publications.updateStatus(publicationId, {

@@ -27,6 +27,8 @@ export interface PublishJobData {
   connectionId: string;
   userId: string;
   includeCoverImage: boolean;
+  title?: string;
+  coverImageUrl?: string;
 }
 
 // ─── State Machine ────────────────────────────────────────
