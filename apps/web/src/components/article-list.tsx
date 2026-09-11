@@ -222,7 +222,7 @@ export function ArticleList() {
               className="group flex items-center gap-2 border-b border-hairline pr-2 transition-colors last:border-b-0 hover:bg-canvas"
             >
               <Link
-                href={`/app/articles/${article.id}`}
+                href={`/app/articles/${article.slug ?? article.id}`}
                 className="flex min-w-0 flex-1 items-center gap-4 py-3 pl-3"
               >
                 <span className="flex h-12 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-hairline bg-canvas text-mute">

@@ -67,9 +67,14 @@ export function ArticleDetail({ id }: { id: string }) {
     },
   });
 
+  // Real id once loaded; the route param may be a slug.
+  const articleId = article?.id ?? id;
+  const loaded = !!article;
+
   const { data: publications } = useQuery({
-    queryKey: ["publications", id],
-    queryFn: () => listPublications(id),
+    queryKey: ["publications", articleId],
+    queryFn: () => listPublications(articleId),
+    enabled: !!article,
   });
   const published = (publications ?? []).filter(
     (p) => p.status === "PUBLISHED" && p.externalUrl,
@@ -91,21 +96,22 @@ export function ArticleDetail({ id }: { id: string }) {
   );
 
   useEffect(() => {
+    if (!loaded) return;
     let disconnect = () => {};
     let cancelled = false;
     void (async () => {
       const token = await getToken().catch(() => null);
       if (cancelled) return;
-      disconnect = createSseConnection(id, token, handleEvent);
+      disconnect = createSseConnection(articleId, token, handleEvent);
     })();
     return () => {
       cancelled = true;
       disconnect();
     };
-  }, [id, getToken, handleEvent]);
+  }, [loaded, articleId, getToken, handleEvent]);
 
   const saveMutation = useMutation({
-    mutationFn: (data: UpdateArticleInput) => updateArticle(id, data),
+    mutationFn: (data: UpdateArticleInput) => updateArticle(articleId, data),
     onSuccess: (data) => {
       queryClient.setQueryData(["article", id], data);
       queryClient.invalidateQueries({ queryKey: ["articles"] });
@@ -114,7 +120,7 @@ export function ArticleDetail({ id }: { id: string }) {
   });
 
   const regenerateMutation = useMutation({
-    mutationFn: () => regenerateArticle(id),
+    mutationFn: () => regenerateArticle(articleId),
     onSuccess: () => {
       setConfirmRegen(false);
       setEditing(false);
@@ -142,6 +148,13 @@ export function ArticleDetail({ id }: { id: string }) {
       setEditing(true);
     }
   }, [article]);
+
+  // Canonicalize the URL: once a slug exists, use it instead of the id.
+  useEffect(() => {
+    if (article?.slug && id === article.id && article.slug !== id) {
+      router.replace(`/app/articles/${article.slug}`);
+    }
+  }, [article, id, router]);
 
   if (isLoading || !article) {
     return (

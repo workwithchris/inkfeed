@@ -25,6 +25,7 @@ module.exports = {
         "link-soft": withVar("link-soft"),
         error: withVar("error"),
         "error-deep": withVar("error-deep"),
+        signal: withVar("signal"),
         warning: withVar("warning"),
         violet: withVar("violet"),
         cyan: withVar("cyan"),

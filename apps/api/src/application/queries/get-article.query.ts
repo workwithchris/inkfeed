@@ -1,14 +1,19 @@
 import { Injectable, NotFoundException, Inject } from "@nestjs/common";
 import type { ArticleRepository, Article } from "../../domain/index.js";
 
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class GetArticleQuery {
   constructor(@Inject("ArticleRepository") private readonly articleRepo: ArticleRepository) {}
 
-  async execute(articleId: string): Promise<Article> {
-    const article = await this.articleRepo.findById(articleId);
+  async execute(idOrSlug: string): Promise<Article> {
+    const article = UUID.test(idOrSlug)
+      ? await this.articleRepo.findById(idOrSlug)
+      : await this.articleRepo.findBySlug(idOrSlug);
     if (!article) {
-      throw new NotFoundException(`Article ${articleId} not found`);
+      throw new NotFoundException(`Article ${idOrSlug} not found`);
     }
     return article;
   }

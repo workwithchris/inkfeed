@@ -20,6 +20,7 @@
     --link-soft: 211 229 255;
     --error: 238 0 0;
     --error-deep: 197 0 0;
+    --signal: 224 62 62;
     --warning: 245 166 35;
     --violet: 121 40 202;
     --cyan: 80 227 194;
@@ -43,6 +44,7 @@
     --link-soft: 20 45 82;
     --error: 255 99 105;
     --error-deep: 255 128 133;
+    --signal: 255 90 95;
     --warning: 255 184 71;
     --violet: 191 122 255;
     --cyan: 80 227 194;
@@ -235,5 +237,44 @@
 
   .editor-content .ProseMirror a {
     text-decoration: underline;
+  }
+}
+
+/* ─── The wire (home page) ─────────────────────────────── */
+@keyframes wire-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes signal-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.wire-scroll {
+  animation: wire-scroll 36s linear infinite;
+}
+
+.wire-scroll:hover {
+  animation-play-state: paused;
+}
+
+.signal-dot {
+  animation: signal-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wire-scroll,
+  .signal-dot {
+    animation: none;
   }
 }
