@@ -4,24 +4,41 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const AI_ROUTER_DIR = resolve(ROOT_DIR, "../../packages/ai-router");
-const CORE_DIR = join(AI_ROUTER_DIR, "packages/core");
-const DEST_DIR = join(ROOT_DIR, "node_modules/@ai-router");
+const DEST_DIR = join(ROOT_DIR, "node_modules", "@ai-router");
 
-const run = (cmd, cwd) => {
-  console.log(`> ${cmd}`);
-  execSync(cmd, { cwd, stdio: "inherit" });
-};
+// Find the ai-router checkout. Set AI_ROUTER_DIR to override; otherwise look
+// in the common sibling locations so a plain `npm install` works on any machine.
+const CANDIDATES = [
+  process.env.AI_ROUTER_DIR,
+  join(ROOT_DIR, "ai-router"),
+  resolve(ROOT_DIR, "../ai-router"),
+  resolve(ROOT_DIR, "../packages/ai-router"),
+  resolve(ROOT_DIR, "../../packages/ai-router"),
+].filter(Boolean);
 
-if (!existsSync(join(CORE_DIR, "dist"))) {
-  console.log("Building ai-router core...");
-  run("npm install", AI_ROUTER_DIR);
-  run("npm run build", AI_ROUTER_DIR);
+const routerDir = CANDIDATES.find((dir) =>
+  existsSync(join(dir, "packages", "core")),
+);
+
+if (!routerDir) {
+  console.warn(
+    "\n[setup-ai-router] ai-router checkout not found; skipping.\n" +
+      "  Clone it beside this repo (e.g. ../ai-router) and re-run `npm install`,\n" +
+      "  or set AI_ROUTER_DIR to its path.\n",
+  );
+  process.exit(0);
 }
 
-console.log("Copying @ai-router/core...");
+const coreDir = join(routerDir, "packages", "core");
+
+if (!existsSync(join(coreDir, "dist"))) {
+  console.log(`[setup-ai-router] Building ai-router core in ${routerDir}...`);
+  execSync("npm install", { cwd: routerDir, stdio: "inherit" });
+  execSync("npm run build", { cwd: routerDir, stdio: "inherit" });
+}
+
+console.log("[setup-ai-router] Copying @ai-router/core...");
 rmSync(DEST_DIR, { recursive: true, force: true });
 mkdirSync(DEST_DIR, { recursive: true });
-cpSync(CORE_DIR, join(DEST_DIR, "core"), { recursive: true });
-
-console.log("Done.");
+cpSync(coreDir, join(DEST_DIR, "core"), { recursive: true });
+console.log("[setup-ai-router] Done.");

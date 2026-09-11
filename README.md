@@ -62,10 +62,12 @@ stream over SSE (`GET /api/articles/:id/events`).
 - A Clerk account (auth)
 - At least one AI provider key (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, or `OPENCODE_API_KEY`) — or add providers in-app
 
-> `@repo/ai` depends on `@ai-router/core` from a sibling checkout. The
-> `postinstall` script (`scripts/setup-ai-router.mjs`) copies the built core from
-> `../../packages/ai-router/packages/core` into `node_modules/@ai-router/core`,
-> building it first if needed. Clone `ai-router` there if the script fails.
+> `@repo/ai` needs `@ai-router/core` at runtime. The `postinstall` script
+> (`scripts/setup-ai-router.mjs`) finds the `ai-router` checkout, builds its core
+> if needed, and copies it into `node_modules/@ai-router/core`. By default it
+> looks beside this repo (`../ai-router`); set `AI_ROUTER_DIR=/path/to/ai-router`
+> to point elsewhere. If the checkout is missing, install still succeeds and
+> prints a warning — re-run `npm install` after cloning it.
 
 ## Quickstart
 

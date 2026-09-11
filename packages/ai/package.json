@@ -15,8 +15,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@repo/types": "*",
-    "@ai-router/core": "file:../../../../packages/ai-router/packages/core"
+    "@repo/types": "*"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
