@@ -59,6 +59,15 @@ export async function generateMetadata({
     article.slug ?? article.id,
   );
 
+  // Fall back to a generated social card when the writer hasn't set a cover.
+  const ogImage =
+    article.coverImageUrl ??
+    `${SITE}/api/og?title=${encodeURIComponent(title)}${
+      article.authorName
+        ? `&author=${encodeURIComponent(article.authorName)}`
+        : ""
+    }`;
+
   return {
     title,
     description,
@@ -68,9 +77,13 @@ export async function generateMetadata({
       description,
       type: "article",
       url: canonical,
-      images: article.coverImageUrl
-        ? [{ url: article.coverImageUrl }]
-        : undefined,
+      images: [{ url: ogImage }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
     },
   };
 }

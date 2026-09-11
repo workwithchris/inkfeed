@@ -154,6 +154,14 @@ export function ArticleDetail({ id }: { id: string }) {
   const done = article.status === "COMPLETED";
   const failed = article.status === "FAILED";
 
+  const useGeneratedCover = () => {
+    const origin = window.location.origin;
+    const url = `${origin}/api/og?title=${encodeURIComponent(
+      article.title || "Untitled",
+    )}`;
+    saveMutation.mutate({ coverImageUrl: url });
+  };
+
   return (
     <main>
       {/* ─── Top bar ────────────────────────────────────────── */}
@@ -190,12 +198,31 @@ export function ArticleDetail({ id }: { id: string }) {
             {/* Main column */}
             <div className="min-w-0">
               <p className="eyebrow">Article</p>
-              {article.coverImageUrl && (
-                <img
-                  src={article.coverImageUrl}
-                  alt=""
-                  className="mt-4 aspect-video w-full rounded-lg border border-hairline object-cover"
-                />
+              {article.coverImageUrl ? (
+                <div className="mt-4 flex flex-col gap-2">
+                  <img
+                    src={article.coverImageUrl}
+                    alt=""
+                    className="aspect-video w-full rounded-lg border border-hairline object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={useGeneratedCover}
+                    disabled={saveMutation.isPending}
+                    className="btn-sm-ghost self-start"
+                  >
+                    Regenerate cover
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={useGeneratedCover}
+                  disabled={saveMutation.isPending}
+                  className="btn-sm-ghost mt-4"
+                >
+                  Generate cover
+                </button>
               )}
               <h1 className="mt-3 text-display-xl text-ink">
                 {article.title?.trim() && article.title !== "Untitled Video"
