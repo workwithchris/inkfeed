@@ -3,6 +3,7 @@ import type {
   ConverterService,
   ExtractedContent,
   FeedListing,
+  PlaylistListing,
 } from "../../domain/index.js";
 
 interface RawExtract {
@@ -82,6 +83,41 @@ export class HttpConverterService implements ConverterService {
     }
 
     return (await response.json()) as FeedListing;
+  }
+
+  async listPlaylistItems(url: string): Promise<PlaylistListing> {
+    const response = await fetch(`${this.baseUrl}/playlist`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Converter service error ${response.status}: ${err}`);
+    }
+
+    const data = (await response.json()) as {
+      title: string;
+      items: {
+        videoId: string;
+        url: string;
+        title: string;
+        duration_seconds: number | null;
+        channel: string | null;
+      }[];
+    };
+
+    return {
+      title: data.title,
+      items: data.items.map((i) => ({
+        videoId: i.videoId,
+        url: i.url,
+        title: i.title,
+        durationSeconds: i.duration_seconds,
+        channel: i.channel,
+      })),
+    };
   }
 
   private async parse(response: Response): Promise<ExtractedContent> {

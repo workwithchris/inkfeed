@@ -22,6 +22,8 @@ import {
   CreateArticleDto,
   CreateManualArticleDto,
   UploadArticleDto,
+  BulkCreateArticlesDto,
+  InspectFeedDto,
 } from "../../application/dtos/create-article.dto.js";
 import {
   UpdateArticleDto,
@@ -127,6 +129,67 @@ export class ArticleController {
     });
 
     return { id: article.id, status: article.status };
+  }
+
+  // Expand a YouTube playlist/channel into its videos for multi-select.
+  @Post("inspect-playlist")
+  @HttpCode(HttpStatus.OK)
+  async inspectPlaylist(@Body() dto: InspectFeedDto) {
+    try {
+      return await this.converter.listPlaylistItems(dto.url);
+    } catch (err) {
+      throw new BadRequestException(
+        err instanceof Error ? err.message : "Could not read playlist",
+      );
+    }
+  }
+
+  // Create + enqueue one article per selected playlist/channel item.
+  @Post("bulk")
+  @HttpCode(HttpStatus.CREATED)
+  async createBulk(
+    @Body() dto: BulkCreateArticlesDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const created: { id: string; status: string }[] = [];
+
+    for (const item of dto.items) {
+      const match = item.url.match(
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+      );
+      const videoId = match?.[1] ?? "";
+      if (!videoId) continue;
+
+      let title = item.title?.trim() ?? "";
+      let channel = item.channel ?? null;
+      if (!title) {
+        const metadata = await fetchYouTubeMetadata(item.url);
+        title = metadata.title;
+        channel = channel ?? metadata.channel;
+      }
+
+      const article = await this.articleRepo.create({
+        userId: req.userId,
+        youtubeUrl: item.url,
+        videoId,
+        sourceType: "youtube",
+        sourceUrl: item.url,
+        sourceItemUrl: null,
+        title,
+        channel,
+      });
+
+      await articleQueue.add("process-article", {
+        articleId: article.id,
+        youtubeUrl: article.youtubeUrl,
+        videoId,
+        userId: req.userId,
+      });
+
+      created.push({ id: article.id, status: article.status });
+    }
+
+    return { created };
   }
 
   // Start an article from scratch with no source. It is created empty and

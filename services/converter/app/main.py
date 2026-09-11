@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from markitdown import MarkItDown
 import feedparser
+import yt_dlp
 import io
 import html
 import re
@@ -48,6 +49,52 @@ class FeedResponse(BaseModel):
 class FeedItemRequest(BaseModel):
     feedUrl: HttpUrl
     itemUrl: str
+
+
+class PlaylistRequest(BaseModel):
+    url: HttpUrl
+
+
+class PlaylistItem(BaseModel):
+    videoId: str
+    url: str
+    title: str
+    duration_seconds: int | None = None
+    channel: str | None = None
+
+
+class PlaylistResponse(BaseModel):
+    title: str
+    items: list[PlaylistItem]
+
+
+# How many entries to expand from a playlist/channel in one request.
+PLAYLIST_LIMIT = 50
+
+
+def is_playlist_or_channel(url: str) -> bool:
+    return bool(
+        re.search(r"(?:[?&]list=|/playlist|/channel/|/c/|/user/|/@)", url)
+    )
+
+
+def normalize_channel_url(url: str) -> str:
+    """A bare channel URL lists tabs (Videos/Live/Shorts), not videos. Point
+    it at the Videos tab so yt-dlp returns actual videos."""
+    base = url.split("?")[0].rstrip("/")
+    if re.search(
+        r"youtube\.com/(?:@[^/]+|channel/[^/]+|c/[^/]+|user/[^/]+)$", base
+    ):
+        return base + "/videos"
+    return url
+
+
+def is_video_entry(entry: dict) -> bool:
+    """Drop channel tab entries (Videos/Live/Shorts) and anything without a
+    real 11-char YouTube id."""
+    if str(entry.get("ie_key") or "").endswith("Tab"):
+        return False
+    return bool(re.fullmatch(r"[A-Za-z0-9_-]{11}", str(entry.get("id") or "")))
 
 
 def extract_video_id(url: str) -> str | None:
@@ -278,6 +325,62 @@ async def extract_feed_item(req: FeedItemRequest):
     except Exception as e:
         logger.error(f"Feed item extraction failed for {feed_url}: {e}")
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+
+
+@app.post("/playlist", response_model=PlaylistResponse)
+async def playlist(req: PlaylistRequest):
+    url_str = str(req.url)
+    if not is_playlist_or_channel(url_str):
+        raise HTTPException(
+            status_code=422, detail="Not a playlist or channel URL"
+        )
+    try:
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": "in_playlist",
+            "skip_download": True,
+            "playlistend": PLAYLIST_LIMIT,
+        }
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(
+                normalize_channel_url(url_str), download=False
+            )
+
+        if info is None:
+            raise HTTPException(status_code=422, detail="Nothing to expand")
+
+        title = info.get("title") or "Playlist"
+        entries = [e for e in (info.get("entries") or []) if e]
+
+        items: list[PlaylistItem] = []
+        for entry in entries:
+            if not is_video_entry(entry):
+                continue
+            video_id = entry["id"]
+            items.append(
+                PlaylistItem(
+                    videoId=video_id,
+                    url=entry.get("url")
+                    or f"https://www.youtube.com/watch?v={video_id}",
+                    title=entry.get("title") or "Untitled",
+                    duration_seconds=(
+                        int(entry["duration"])
+                        if entry.get("duration") is not None
+                        else None
+                    ),
+                    channel=entry.get("channel") or entry.get("uploader"),
+                )
+            )
+
+        return PlaylistResponse(title=title, items=items)
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Playlist expansion failed for {url_str}: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Playlist expansion failed: {str(e)}"
+        )
 
 
 @app.get("/health")

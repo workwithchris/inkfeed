@@ -306,6 +306,19 @@ export interface FeedListing {
   items: FeedItem[];
 }
 
+export interface PlaylistItem {
+  videoId: string;
+  url: string;
+  title: string;
+  durationSeconds: number | null;
+  channel: string | null;
+}
+
+export interface PlaylistListing {
+  title: string;
+  items: PlaylistItem[];
+}
+
 export interface ConverterService {
   extractUrl(url: string): Promise<ExtractedContent>;
   extractFile(input: { filename: string; data: Buffer }): Promise<ExtractedContent>;
@@ -314,6 +327,7 @@ export interface ConverterService {
     itemUrl: string;
   }): Promise<ExtractedContent>;
   listFeedItems(url: string): Promise<FeedListing>;
+  listPlaylistItems(url: string): Promise<PlaylistListing>;
 }
 
 export interface ArticlePublisher {

@@ -7,7 +7,10 @@ import {
   createArticle,
   uploadArticle,
   inspectFeed,
+  inspectPlaylist,
+  createArticlesBulk,
   type FeedItem,
+  type PlaylistItem,
 } from "@/lib/api";
 
 type Mode = "youtube" | "url" | "feed" | "file";
@@ -61,6 +64,10 @@ function isValidYouTubeUrl(url: string): boolean {
   return /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.test(url);
 }
 
+function isPlaylistOrChannel(url: string): boolean {
+  return /(?:[?&]list=|\/playlist|\/channel\/|\/c\/|\/user\/|\/@)/.test(url);
+}
+
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -82,6 +89,9 @@ export function UrlInput() {
   const [feedTitle, setFeedTitle] = useState("");
   const [items, setItems] = useState<FeedItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [playlistTitle, setPlaylistTitle] = useState("");
+  const [playlistItems, setPlaylistItems] = useState<PlaylistItem[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
 
   const go = (id: string) => {
@@ -113,14 +123,41 @@ export function UrlInput() {
     onError: (err: Error) => setError(err.message),
   });
 
-  const pending = createMutation.isPending || uploadMutation.isPending;
-  const fetching = inspectMutation.isPending;
+  const inspectPlaylistMutation = useMutation({
+    mutationFn: inspectPlaylist,
+    onSuccess: (data) => {
+      setPlaylistTitle(data.title);
+      setPlaylistItems(data.items);
+      setSelectedVideos(new Set(data.items.map((i) => i.videoId)));
+      setError(data.items.length ? "" : "No videos found");
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const bulkMutation = useMutation({
+    mutationFn: createArticlesBulk,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+      router.push("/app");
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const pending =
+    createMutation.isPending || uploadMutation.isPending || bulkMutation.isPending;
+  const fetching = inspectMutation.isPending || inspectPlaylistMutation.isPending;
   const selected = items[selectedIndex] ?? null;
 
   const resetFeed = () => {
     setItems([]);
     setSelectedIndex(0);
     setFeedTitle("");
+  };
+
+  const resetPlaylist = () => {
+    setPlaylistItems([]);
+    setSelectedVideos(new Set());
+    setPlaylistTitle("");
   };
 
   const changeMode = (next: Mode) => {
@@ -130,6 +167,7 @@ export function UrlInput() {
     setFile(null);
     setDragging(false);
     resetFeed();
+    resetPlaylist();
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -168,6 +206,29 @@ export function UrlInput() {
     }
 
     if (mode === "youtube") {
+      // Playlist/channel: expand into a multi-select list first.
+      if (isPlaylistOrChannel(url)) {
+        if (playlistItems.length === 0) {
+          inspectPlaylistMutation.mutate(url.trim());
+          return;
+        }
+        const chosen = playlistItems.filter((i) =>
+          selectedVideos.has(i.videoId),
+        );
+        if (!chosen.length) {
+          setError("Select at least one video");
+          return;
+        }
+        bulkMutation.mutate(
+          chosen.map((i) => ({
+            url: i.url,
+            title: i.title,
+            channel: i.channel ?? undefined,
+          })),
+        );
+        return;
+      }
+
       if (!isValidYouTubeUrl(url)) {
         setError("Enter a valid YouTube URL");
         return;
@@ -195,6 +256,8 @@ export function UrlInput() {
   };
 
   const feedNeedsFetch = mode === "feed" && items.length === 0;
+  const playlistUrl = mode === "youtube" && isPlaylistOrChannel(url);
+  const playlistNeedsFetch = playlistUrl && playlistItems.length === 0;
   const busy = pending || fetching;
 
   const primaryLabel = pending
@@ -203,14 +266,19 @@ export function UrlInput() {
       ? "Fetching…"
       : feedNeedsFetch
         ? "Fetch episodes"
-        : mode === "file"
-          ? "Upload & convert"
-          : "Convert";
+        : playlistNeedsFetch
+          ? "List videos"
+          : playlistUrl
+            ? `Create ${selectedVideos.size} article${selectedVideos.size === 1 ? "" : "s"}`
+            : mode === "file"
+              ? "Upload & convert"
+              : "Convert";
 
   const primaryDisabled =
     busy ||
     (mode === "file" ? !file : !url.trim()) ||
-    (mode === "feed" && !feedNeedsFetch && !selected);
+    (mode === "feed" && !feedNeedsFetch && !selected) ||
+    (playlistUrl && !playlistNeedsFetch && selectedVideos.size === 0);
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
@@ -305,6 +373,7 @@ export function UrlInput() {
               setUrl(e.target.value);
               setError("");
               if (mode === "feed") resetFeed();
+              if (mode === "youtube") resetPlaylist();
             }}
             placeholder={
               MODES.find((m) => m.id === mode)?.placeholder ?? "https://..."
@@ -364,6 +433,77 @@ export function UrlInput() {
                         }`}
                       >
                         {new Date(item.publishedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Playlist / channel videos */}
+      {playlistUrl && playlistItems.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow truncate">{playlistTitle || "Videos"}</p>
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedVideos(
+                  selectedVideos.size === playlistItems.length
+                    ? new Set()
+                    : new Set(playlistItems.map((i) => i.videoId)),
+                )
+              }
+              className="text-body-sm text-mute transition-colors hover:text-ink"
+            >
+              {selectedVideos.size === playlistItems.length
+                ? "Clear all"
+                : "Select all"}
+            </button>
+          </div>
+          <div className="flex max-h-64 flex-col gap-1 overflow-y-auto rounded-lg border border-hairline bg-canvas p-1">
+            {playlistItems.map((item) => {
+              const active = selectedVideos.has(item.videoId);
+              return (
+                <button
+                  key={item.videoId}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    const next = new Set(selectedVideos);
+                    if (active) next.delete(item.videoId);
+                    else next.add(item.videoId);
+                    setSelectedVideos(next);
+                  }}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors ${
+                    active ? "bg-hairline-soft text-ink" : "text-body hover:bg-hairline-soft hover:text-ink"
+                  }`}
+                >
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
+                      active ? "border-ink bg-ink text-on-ink" : "border-hairline"
+                    }`}
+                  >
+                    {active && (
+                      <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-body-md">
+                      {item.title}
+                    </span>
+                    {item.durationSeconds != null && (
+                      <span
+                        className={`block truncate font-mono text-body-sm ${
+                          active ? "text-mute" : "text-faint"
+                        }`}
+                      >
+                        {Math.round(item.durationSeconds / 60)} min
                       </span>
                     )}
                   </span>

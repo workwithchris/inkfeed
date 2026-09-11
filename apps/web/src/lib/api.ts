@@ -135,6 +135,35 @@ export async function createArticle(
   });
 }
 
+export interface PlaylistItem {
+  videoId: string;
+  url: string;
+  title: string;
+  durationSeconds: number | null;
+  channel: string | null;
+}
+
+export interface PlaylistListing {
+  title: string;
+  items: PlaylistItem[];
+}
+
+export async function inspectPlaylist(url: string): Promise<PlaylistListing> {
+  return apiFetch("/api/articles/inspect-playlist", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+}
+
+export async function createArticlesBulk(
+  items: { url: string; title?: string; channel?: string }[],
+): Promise<{ created: { id: string; status: string }[] }> {
+  return apiFetch("/api/articles/bulk", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  });
+}
+
 export async function createManualArticle(
   title?: string,
 ): Promise<{ id: string; status: string }> {

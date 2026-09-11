@@ -1,10 +1,15 @@
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
+  ValidateNested,
 } from "class-validator";
+import { Type } from "class-transformer";
 import { SOURCE_TYPES } from "@repo/types";
 import type { SourceType } from "@repo/types";
 
@@ -43,4 +48,26 @@ export class InspectFeedDto {
   @IsUrl({}, { message: "Must be a valid URL" })
   @IsNotEmpty()
   url!: string;
+}
+
+export class BulkArticleItemDto {
+  @IsUrl({}, { message: "Must be a valid URL" })
+  url!: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  channel?: string;
+}
+
+export class BulkCreateArticlesDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => BulkArticleItemDto)
+  items!: BulkArticleItemDto[];
 }
