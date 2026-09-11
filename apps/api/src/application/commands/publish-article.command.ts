@@ -3,9 +3,12 @@ import type {
   ArticleRepository,
   ConnectionRepository,
   PublishRepository,
+  UserRepository,
 } from "../../domain/index";
 import { PublisherRegistry } from "../../infrastructure/publishers/publisher.registry";
+import { PublishResponseError } from "../../infrastructure/publishers/publish-response";
 import { decryptSecret } from "../../infrastructure/crypto/secret-box";
+import { publicCanonicalUrl } from "../../infrastructure/publishers/public-urls";
 
 export interface PublishOutcome {
   articleId: string;
@@ -19,26 +22,6 @@ export interface PublishOptions {
   coverImageUrl?: string | null;
 }
 
-// Dev.to rejects canonical URLs that aren't publicly reachable (e.g. localhost),
-// so omit the field entirely in local dev instead of failing the publish.
-function buildCanonicalUrl(slugOrId: string): string | null {
-  const appUrl = process.env.APP_URL?.replace(/\/$/, "");
-  if (!appUrl) return null;
-  try {
-    const { hostname } = new URL(appUrl);
-    if (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname.endsWith(".local")
-    ) {
-      return null;
-    }
-    return `${appUrl}/article/${slugOrId}`;
-  } catch {
-    return null;
-  }
-}
-
 @Injectable()
 export class PublishArticleUseCase {
   constructor(
@@ -48,6 +31,8 @@ export class PublishArticleUseCase {
     private readonly connections: ConnectionRepository,
     @Inject("ArticleRepository")
     private readonly articles: ArticleRepository,
+    @Inject("UserRepository")
+    private readonly users: UserRepository,
     private readonly registry: PublisherRegistry,
   ) {}
 
@@ -76,7 +61,11 @@ export class PublishArticleUseCase {
       const publisher = this.registry.get(publication.platform);
       const credential = decryptSecret(connection.credentialEnc);
 
-      const canonicalUrl = buildCanonicalUrl(
+      const user = await this.users.findById(article.userId);
+      const username = user?.username ?? null;
+
+      const canonicalUrl = publicCanonicalUrl(
+        username,
         article.slug ?? article.id,
       );
 
@@ -89,6 +78,9 @@ export class PublishArticleUseCase {
           : options.coverImageUrl?.trim() || article.coverImageUrl;
 
       const result = await publisher.publish(credential, connection.blogId, {
+        articleId: article.id,
+        userId: article.userId,
+        username,
         title,
         content: article.content,
         summary: article.summary,
@@ -103,15 +95,21 @@ export class PublishArticleUseCase {
         externalId: result.externalId,
         externalUrl: result.url,
         errorMessage: null,
+        responseStatus: result.responseStatus ?? null,
+        responseBody: result.responseBody ?? null,
       });
 
       return { articleId: article.id, publicationId, url: result.url };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown publish error";
+      const response =
+        error instanceof PublishResponseError ? error : null;
       await this.publications.updateStatus(publicationId, {
         status: "FAILED",
         errorMessage: message,
+        responseStatus: response?.responseStatus ?? null,
+        responseBody: response?.responseBody ?? null,
       });
       throw error;
     }

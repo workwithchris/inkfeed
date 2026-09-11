@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: "Simple pricing for turning YouTube videos into articles.",
+  description: "Simple pricing for turning any source into a polished article.",
 };
 
 const tiers = [
@@ -78,7 +78,7 @@ export default function PricingPage() {
             <div className="flex items-center justify-between">
               <p className="text-heading-md text-ink">{tier.name}</p>
               {tier.featured && (
-                <span className="rounded-category bg-ink px-3 py-1 font-mono text-eyebrow uppercase text-white">
+                <span className="rounded-category bg-ink px-3 py-1 font-mono text-eyebrow uppercase text-on-ink">
                   Popular
                 </span>
               )}

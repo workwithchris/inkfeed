@@ -101,7 +101,7 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
   const generating = createMutation.isPending;
 
   return (
-    <section className="card mt-10 flex flex-col gap-5">
+    <section className="mt-10 flex flex-col gap-5 border-t border-hairline pt-10">
       <div>
         <p className="eyebrow">Repurpose</p>
         <p className="mt-1 text-body-sm text-mute">
@@ -128,7 +128,7 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
                 setError("");
               }}
               className={`flex-1 rounded-sm px-2 py-1.5 text-button-md transition-colors ${
-                active ? "bg-ink text-white" : "text-body hover:bg-elevated"
+                active ? "bg-ink text-on-ink" : "text-body hover:bg-elevated"
               }`}
             >
               {kind.label}

@@ -56,9 +56,15 @@ export class TypeOrmPublishRepository implements PublishRepository {
       externalId?: string | null;
       externalUrl?: string | null;
       errorMessage?: string | null;
+      responseStatus?: number | null;
+      responseBody?: string | null;
     },
   ): Promise<void> {
     await this.repo.update(id, data);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.repo.delete(id);
   }
 
   private toDomain(entity: PublishEntity): Publication {
@@ -72,6 +78,8 @@ export class TypeOrmPublishRepository implements PublishRepository {
       externalId: entity.externalId,
       externalUrl: entity.externalUrl,
       errorMessage: entity.errorMessage,
+      responseStatus: entity.responseStatus,
+      responseBody: entity.responseBody,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

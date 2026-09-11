@@ -7,7 +7,8 @@ import {
   createProvider,
   updateProvider,
   deleteProvider,
-  type AiProviderResponse,
+  testProvider,
+  type ProviderTestResult,
 } from "@/lib/api";
 
 const PROVIDERS: { id: string; label: string; needsBaseUrl?: boolean }[] = [
@@ -35,6 +36,9 @@ export function ProviderManager() {
   const [form, setForm] = useState(EMPTY);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
+  const [testResults, setTestResults] = useState<
+    Record<string, ProviderTestResult>
+  >({});
 
   const { data: providers, isLoading } = useQuery({
     queryKey: ["providers"],
@@ -72,6 +76,23 @@ export function ProviderManager() {
   const removeMutation = useMutation({
     mutationFn: deleteProvider,
     onSuccess: invalidate,
+  });
+
+  const testMutation = useMutation({
+    mutationFn: (id: string) => testProvider(id),
+    onSuccess: (data, id) =>
+      setTestResults((prev) => ({ ...prev, [id]: data })),
+    onError: (err: Error, id) =>
+      setTestResults((prev) => ({
+        ...prev,
+        [id]: {
+          ok: false,
+          model: "",
+          latencyMs: 0,
+          sample: "",
+          error: err.message,
+        },
+      })),
   });
 
   const selected = PROVIDERS.find((p) => p.id === form.provider);
@@ -279,7 +300,29 @@ export function ProviderManager() {
                     <p className="mt-0.5 truncate text-body-sm text-faint">
                       {meta?.label ?? p.provider} · {p.model}
                     </p>
+                    {testResults[p.id] && (
+                      <p
+                        className={`mt-1 text-body-sm ${
+                          testResults[p.id].ok ? "text-mute" : "text-error"
+                        }`}
+                      >
+                        {testResults[p.id].ok
+                          ? `Working · ${testResults[p.id].latencyMs}ms · ${testResults[p.id].model}`
+                          : `Failed · ${testResults[p.id].error}`}
+                      </p>
+                    )}
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => testMutation.mutate(p.id)}
+                    disabled={testMutation.isPending}
+                    className="btn-sm-ghost"
+                  >
+                    {testMutation.isPending && testMutation.variables === p.id
+                      ? "Testing…"
+                      : "Test"}
+                  </button>
 
                   <button
                     type="button"

@@ -1,5 +1,7 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
-markitdown[youtube-transcription]==0.0.1a2
+markitdown[youtube-transcription,pdf,docx]==0.0.1a2
+feedparser==6.0.11
+python-multipart==0.0.20
 pydantic==2.10.4
 httpx==0.28.1

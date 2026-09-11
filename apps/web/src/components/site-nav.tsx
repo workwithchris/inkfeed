@@ -9,6 +9,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+import { ThemeToggle } from "./theme-toggle";
 
 const LINKS = [
   { href: "/app", label: "Convert" },
@@ -25,12 +26,12 @@ export function SiteNav() {
         {/* Brand + links */}
         <div className="flex items-center gap-7">
           <Link href="/" className="flex items-center gap-2 text-ink">
-            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-ink text-white">
+            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-ink text-on-ink">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M8 5v14l11-7z" />
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
               </svg>
             </span>
-            <span className="text-label-sm">YouTube to Article</span>
+            <span className="text-label-sm">Inkfeed</span>
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
@@ -57,6 +58,7 @@ export function SiteNav() {
 
         {/* Account */}
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <SignedOut>
             <SignInButton mode="modal">
               <button className="btn-sm-ghost">Log in</button>

@@ -5,6 +5,8 @@ import { HashnodePublisher } from "./hashnode.publisher";
 import { BloggerPublisher } from "./blogger.publisher";
 import { LinkedInPublisher } from "./linkedin.publisher";
 import { GitHubPublisher } from "./github.publisher";
+import { SitePublisher } from "./site.publisher";
+import { WebhookPublisher } from "./webhook.publisher";
 
 @Injectable()
 export class PublisherRegistry {
@@ -16,6 +18,8 @@ export class PublisherRegistry {
     blogger: BloggerPublisher,
     linkedin: LinkedInPublisher,
     github: GitHubPublisher,
+    site: SitePublisher,
+    webhook: WebhookPublisher,
   ) {
     this.map = new Map<PublishPlatform, BlogPublisher>([
       [devto.platform, devto],
@@ -23,6 +27,8 @@ export class PublisherRegistry {
       [blogger.platform, blogger],
       [linkedin.platform, linkedin],
       [github.platform, github],
+      [site.platform, site],
+      [webhook.platform, webhook],
     ]);
   }
 

@@ -6,18 +6,53 @@
 
 @layer base {
   :root {
-    --ink: #171717;
-    --body: #4d4d4d;
-    --mute: #8f8f8f;
-    --faint: #a1a1a1;
-    --hairline: #ebebeb;
-    --canvas: #fafafa;
-    --elevated: #ffffff;
+    --ink: 23 23 23;
+    --body: 77 77 77;
+    --mute: 143 143 143;
+    --faint: 161 161 161;
+    --hairline: 235 235 235;
+    --hairline-soft: 242 242 242;
+    --canvas: 250 250 250;
+    --elevated: 255 255 255;
+    --on-ink: 255 255 255;
+    --link: 0 112 243;
+    --link-deep: 7 97 209;
+    --link-soft: 211 229 255;
+    --error: 238 0 0;
+    --error-deep: 197 0 0;
+    --warning: 245 166 35;
+    --violet: 121 40 202;
+    --cyan: 80 227 194;
+    --pink: 255 0 128;
+    --magenta: 235 54 127;
     color-scheme: light;
   }
 
+  .dark {
+    --ink: 237 237 237;
+    --body: 161 161 161;
+    --mute: 143 143 143;
+    --faint: 102 102 102;
+    --hairline: 46 46 46;
+    --hairline-soft: 26 26 26;
+    --canvas: 0 0 0;
+    --elevated: 10 10 10;
+    --on-ink: 10 10 10;
+    --link: 50 145 255;
+    --link-deep: 112 176 255;
+    --link-soft: 20 45 82;
+    --error: 255 99 105;
+    --error-deep: 255 128 133;
+    --warning: 255 184 71;
+    --violet: 191 122 255;
+    --cyan: 80 227 194;
+    --pink: 255 71 161;
+    --magenta: 235 54 127;
+    color-scheme: dark;
+  }
+
   * {
-    border-color: var(--hairline);
+    border-color: rgb(var(--hairline));
   }
 
   body {
@@ -25,7 +60,7 @@
   }
 
   ::selection {
-    @apply bg-ink text-white;
+    @apply bg-ink text-on-ink;
   }
 }
 
@@ -43,8 +78,8 @@
   /* ─── Buttons ────────────────────────────────────────── */
   .btn-primary {
     @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill
-           bg-ink px-[14px] text-button-lg text-white transition-colors
-           hover:bg-black disabled:cursor-not-allowed disabled:opacity-40;
+           bg-ink px-[14px] text-button-lg text-on-ink transition-colors
+           hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-secondary {
@@ -55,7 +90,7 @@
 
   .btn-sm-primary {
     @apply inline-flex h-9 items-center justify-center gap-2 rounded-pill bg-ink px-3.5
-           text-button-md text-white transition-colors hover:bg-black
+           text-button-md text-on-ink transition-colors hover:bg-ink/90
            disabled:cursor-not-allowed disabled:opacity-40;
   }
 

@@ -12,7 +12,9 @@ export type PublishPlatform =
   | "hashnode"
   | "blogger"
   | "linkedin"
-  | "github";
+  | "github"
+  | "site"
+  | "webhook";
 
 export type PublishStatus =
   | "PENDING"
@@ -50,6 +52,13 @@ export class PublishEntity {
 
   @Column({ type: "text", nullable: true })
   errorMessage!: string | null;
+
+  // Raw HTTP response captured from webhook-style destinations.
+  @Column({ type: "int", nullable: true })
+  responseStatus!: number | null;
+
+  @Column({ type: "text", nullable: true })
+  responseBody!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

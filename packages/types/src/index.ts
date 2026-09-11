@@ -6,6 +6,16 @@ export type JobStatus =
   | "COMPLETED"
   | "FAILED";
 
+// ─── Source Types ─────────────────────────────────────────
+export const SOURCE_TYPES = [
+  "youtube",
+  "url",
+  "document",
+  "feed",
+  "manual",
+] as const;
+export type SourceType = (typeof SOURCE_TYPES)[number];
+
 // ─── Domain Entities ──────────────────────────────────────
 export interface User {
   id: string;
@@ -19,6 +29,9 @@ export interface Article {
   id: string;
   userId: string;
   youtubeUrl: string;
+  sourceType: SourceType;
+  sourceUrl: string | null;
+  sourceItemUrl: string | null;
   title: string;
   content: string;
   summary: string | null;
@@ -35,6 +48,7 @@ export interface Article {
   channel: string | null;
   videoId: string;
   aiModel: string | null;
+  aiSource: "user" | "platform" | null;
   errorMessage: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -49,6 +63,9 @@ export interface CreateArticleDto {
 export interface ArticleResponseDto {
   id: string;
   youtubeUrl: string;
+  sourceType: SourceType;
+  sourceUrl: string | null;
+  sourceItemUrl: string | null;
   title: string;
   content: string;
   summary: string | null;
@@ -63,6 +80,7 @@ export interface ArticleResponseDto {
   durationSeconds: number | null;
   channel: string | null;
   videoId: string;
+  aiSource: "user" | "platform" | null;
   createdAt: Date;
   completedAt: Date | null;
 }
@@ -98,7 +116,9 @@ export type PublishPlatform =
   | "hashnode"
   | "blogger"
   | "linkedin"
-  | "github";
+  | "github"
+  | "site"
+  | "webhook";
 
 export type PublishStatus = "PENDING" | "PUBLISHING" | "PUBLISHED" | "FAILED";
 
@@ -122,6 +142,8 @@ export interface Publication {
   externalId: string | null;
   externalUrl: string | null;
   errorMessage: string | null;
+  responseStatus: number | null;
+  responseBody: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

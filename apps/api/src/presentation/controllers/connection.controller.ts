@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Inject,
   UseGuards,
+  BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
 import { CreateConnectionDto } from "../../application/dtos/connection.dto";
@@ -44,6 +45,8 @@ export class ConnectionController {
 
   @Get()
   async list(@Req() req: Request & { userId: string }) {
+    // The built-in "this site" destination should always be available.
+    await this.connectPlatform.ensureBuiltIn(req.userId);
     return this.connections.findByUserId(req.userId);
   }
 
@@ -56,6 +59,9 @@ export class ConnectionController {
     const connection = await this.connections.findById(id);
     if (!connection || connection.userId !== req.userId) {
       throw new NotFoundException(`Connection ${id} not found`);
+    }
+    if (connection.platform === "site") {
+      throw new BadRequestException("The built-in site connection can't be removed");
     }
     await this.connections.delete(id);
   }

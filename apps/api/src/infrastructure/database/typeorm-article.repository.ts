@@ -9,6 +9,8 @@ import type {
   ContentData,
   EditableContentData,
   Article,
+  PublicFeedQuery,
+  PublicFeedResult,
 } from "../../domain/index";
 
 @Injectable()
@@ -23,6 +25,9 @@ export class TypeOrmArticleRepository implements ArticleRepository {
       userId: data.userId,
       youtubeUrl: data.youtubeUrl,
       videoId: data.videoId,
+      sourceType: data.sourceType,
+      sourceUrl: data.sourceUrl,
+      sourceItemUrl: data.sourceItemUrl,
       title: data.title ?? "",
       channel: data.channel ?? null,
       status: "PENDING",
@@ -49,6 +54,60 @@ export class TypeOrmArticleRepository implements ArticleRepository {
     return entities.map(this.toDomain);
   }
 
+  async findSitePublishedByUserId(userId: string): Promise<Article[]> {
+    const rows = await this.repo
+      .createQueryBuilder("article")
+      .where("article.userId = :userId", { userId })
+      .andWhere("article.status = 'COMPLETED'")
+      .andWhere(
+        `EXISTS (
+          SELECT 1 FROM publications pub
+          WHERE pub."articleId" = article.id
+            AND pub.platform = 'site'
+            AND pub.status = 'PUBLISHED'
+        )`,
+      )
+      .orderBy("article.createdAt", "DESC")
+      .getMany();
+    return rows.map((e) => this.toDomain(e));
+  }
+
+  async findSitePublishedFeed(
+    query: PublicFeedQuery,
+  ): Promise<PublicFeedResult> {
+    const qb = this.repo
+      .createQueryBuilder("article")
+      .leftJoinAndSelect("article.user", "user")
+      .where("article.status = 'COMPLETED'")
+      .andWhere(
+        `EXISTS (
+          SELECT 1 FROM publications pub
+          WHERE pub."articleId" = article.id
+            AND pub.platform = 'site'
+            AND pub.status = 'PUBLISHED'
+        )`,
+      );
+
+    if (query.tag) {
+      qb.andWhere("article.tags LIKE :tag", { tag: `%${query.tag}%` });
+    }
+
+    qb.orderBy("article.createdAt", "DESC")
+      .skip(query.offset)
+      .take(query.limit);
+
+    const [rows, total] = await qb.getManyAndCount();
+
+    return {
+      total,
+      items: rows.map((entity) => ({
+        article: this.toDomain(entity),
+        authorUsername: entity.user?.username ?? null,
+        authorName: entity.user?.name ?? null,
+      })),
+    };
+  }
+
   async updateStatus(id: string, status: Article["status"]): Promise<void> {
     await this.repo.update(id, { status });
   }
@@ -67,6 +126,7 @@ export class TypeOrmArticleRepository implements ArticleRepository {
       content: data.content,
       summary: data.summary,
       aiModel: data.aiModel,
+      aiSource: data.aiSource,
       metaTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       slug: data.slug,
@@ -102,6 +162,8 @@ export class TypeOrmArticleRepository implements ArticleRepository {
     if (data.keywords !== undefined) patch.keywords = data.keywords;
     if (data.tags !== undefined) patch.tags = data.tags;
     if (data.coverImageUrl !== undefined) patch.coverImageUrl = data.coverImageUrl;
+    if (data.readingTimeMinutes !== undefined)
+      patch.readingTimeMinutes = data.readingTimeMinutes;
     if (Object.keys(patch).length === 0) return;
     await this.repo.update(id, patch);
   }
@@ -116,6 +178,9 @@ export class TypeOrmArticleRepository implements ArticleRepository {
       userId: entity.userId,
       youtubeUrl: entity.youtubeUrl,
       videoId: entity.videoId,
+      sourceType: entity.sourceType as Article["sourceType"],
+      sourceUrl: entity.sourceUrl,
+      sourceItemUrl: entity.sourceItemUrl,
       title: entity.title,
       content: entity.content,
       summary: entity.summary,
@@ -131,6 +196,7 @@ export class TypeOrmArticleRepository implements ArticleRepository {
       durationSeconds: entity.durationSeconds,
       channel: entity.channel,
       aiModel: entity.aiModel,
+      aiSource: entity.aiSource,
       errorMessage: entity.errorMessage,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,

@@ -26,6 +26,8 @@ import { HashnodePublisher } from "./infrastructure/publishers/hashnode.publishe
 import { BloggerPublisher } from "./infrastructure/publishers/blogger.publisher";
 import { LinkedInPublisher } from "./infrastructure/publishers/linkedin.publisher";
 import { GitHubPublisher } from "./infrastructure/publishers/github.publisher";
+import { SitePublisher } from "./infrastructure/publishers/site.publisher";
+import { WebhookPublisher } from "./infrastructure/publishers/webhook.publisher";
 import { PublisherRegistry } from "./infrastructure/publishers/publisher.registry";
 import { ProcessArticleUseCase } from "./application/commands/process-article.command";
 import { GenerateDerivativeUseCase } from "./application/commands/generate-derivative.command";
@@ -35,6 +37,7 @@ import { CreateAiProviderUseCase } from "./application/commands/create-provider.
 import { PublishArticleUseCase } from "./application/commands/publish-article.command";
 import { GetArticleQuery, ListArticlesQuery } from "./application/queries/get-article.query";
 import { ArticleController } from "./presentation/controllers/article.controller";
+import { FeedController } from "./presentation/controllers/feed.controller";
 import { ConnectionController } from "./presentation/controllers/connection.controller";
 import { ProviderController } from "./presentation/controllers/provider.controller";
 import { BloggerController } from "./presentation/controllers/blogger.controller";
@@ -42,6 +45,9 @@ import { LinkedInController } from "./presentation/controllers/linkedin.controll
 import { PublicationController } from "./presentation/controllers/publication.controller";
 import { HealthController } from "./presentation/controllers/health.controller";
 import { PublicArticleController } from "./presentation/controllers/public-article.controller";
+import { PublicFeedController } from "./presentation/controllers/public-feed.controller";
+import { PublicProfileController } from "./presentation/controllers/public-profile.controller";
+import { ProfileController } from "./presentation/controllers/profile.controller";
 import { SseService } from "./presentation/sse/sse.service";
 import type { EventPublisher } from "./domain/index";
 
@@ -118,11 +124,15 @@ const EventPublisherProvider = {
   ],
   controllers: [
     ArticleController,
+    FeedController,
     ConnectionController,
     ProviderController,
     BloggerController,
     LinkedInController,
     PublicArticleController,
+    PublicProfileController,
+    PublicFeedController,
+    ProfileController,
     HealthController,
   ],
   providers: [
@@ -142,6 +152,8 @@ const EventPublisherProvider = {
     BloggerPublisher,
     LinkedInPublisher,
     GitHubPublisher,
+    SitePublisher,
+    WebhookPublisher,
     PublisherRegistry,
     AiRouteResolver,
     ProcessArticleUseCase,

@@ -13,11 +13,16 @@ import {
   HttpStatus,
   Inject,
   UseGuards,
+  BadRequestException,
   NotFoundException,
   ForbiddenException,
 } from "@nestjs/common";
 import { Observable, Subject } from "rxjs";
-import { CreateArticleDto } from "../../application/dtos/create-article.dto";
+import {
+  CreateArticleDto,
+  CreateManualArticleDto,
+  UploadArticleDto,
+} from "../../application/dtos/create-article.dto";
 import {
   UpdateArticleDto,
   PublishArticleDto,
@@ -31,6 +36,7 @@ import { UpdateArticleUseCase } from "../../application/commands/update-article.
 import type {
   ArticleRepository,
   ConnectionRepository,
+  ConverterService,
   DerivativeRepository,
   PublishRepository,
 } from "../../domain/index";
@@ -71,6 +77,8 @@ export class ArticleController {
     @Inject("PublishRepository") private readonly publishRepo: PublishRepository,
     @Inject("DerivativeRepository")
     private readonly derivativeRepo: DerivativeRepository,
+    @Inject("ConverterService")
+    private readonly converter: ConverterService,
     private readonly sseService: SseService,
   ) {}
 
@@ -80,26 +88,116 @@ export class ArticleController {
     @Body() dto: CreateArticleDto,
     @Req() req: Request & { userId: string },
   ) {
-    const videoIdMatch = dto.youtubeUrl.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    );
-    const videoId = videoIdMatch?.[1] ?? "";
+    if (dto.sourceType === "feed" && !dto.itemUrl) {
+      throw new BadRequestException("Select an episode from the feed");
+    }
 
-    const metadata = await fetchYouTubeMetadata(dto.youtubeUrl);
+    let videoId = "";
+    let title = "";
+    let channel: string | null = null;
+
+    if (dto.sourceType === "youtube") {
+      const match = dto.url.match(
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+      );
+      videoId = match?.[1] ?? "";
+      if (!videoId) throw new BadRequestException("Invalid YouTube URL");
+
+      const metadata = await fetchYouTubeMetadata(dto.url);
+      title = metadata.title;
+      channel = metadata.channel;
+    }
 
     const article = await this.articleRepo.create({
       userId: req.userId,
-      youtubeUrl: dto.youtubeUrl,
+      youtubeUrl: dto.sourceType === "youtube" ? dto.url : "",
       videoId,
-      title: metadata.title,
-      channel: metadata.channel,
+      sourceType: dto.sourceType,
+      sourceUrl: dto.url,
+      sourceItemUrl: dto.itemUrl ?? null,
+      title,
+      channel,
     });
 
     await articleQueue.add("process-article", {
       articleId: article.id,
-      youtubeUrl: dto.youtubeUrl,
+      youtubeUrl: article.youtubeUrl,
       videoId,
       userId: req.userId,
+    });
+
+    return { id: article.id, status: article.status };
+  }
+
+  // Start an article from scratch with no source. It is created empty and
+  // immediately editable, bypassing the extraction/synthesis pipeline.
+  @Post("manual")
+  @HttpCode(HttpStatus.CREATED)
+  async createManual(
+    @Body() dto: CreateManualArticleDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.create({
+      userId: req.userId,
+      youtubeUrl: "",
+      videoId: "",
+      sourceType: "manual",
+      sourceUrl: null,
+      sourceItemUrl: null,
+      title: dto.title?.trim() ?? "",
+      channel: null,
+    });
+
+    await this.articleRepo.markCompleted(article.id);
+
+    return { id: article.id, status: "COMPLETED" };
+  }
+
+  // Documents (PDF/DOCX) are extracted up-front so the bytes need not be
+  // persisted, then the worker runs synthesis from the stored text.
+  @Post("upload")
+  @HttpCode(HttpStatus.CREATED)
+  async upload(
+    @Body() dto: UploadArticleDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const buffer = Buffer.from(dto.contentBase64, "base64");
+    if (buffer.length === 0) {
+      throw new BadRequestException("The uploaded file is empty");
+    }
+    if (buffer.length > 15 * 1024 * 1024) {
+      throw new BadRequestException("File too large (max 15MB)");
+    }
+
+    const extracted = await this.converter.extractFile({
+      filename: dto.filename,
+      data: buffer,
+    });
+
+    const article = await this.articleRepo.create({
+      userId: req.userId,
+      youtubeUrl: "",
+      videoId: "",
+      sourceType: "document",
+      sourceUrl: null,
+      sourceItemUrl: null,
+      title: extracted.title,
+      channel: null,
+    });
+
+    await this.articleRepo.updateTranscript(article.id, {
+      title: extracted.title,
+      transcript: extracted.text,
+      durationSeconds: extracted.durationSeconds,
+      channel: extracted.channel,
+    });
+
+    await articleQueue.add("process-article", {
+      articleId: article.id,
+      youtubeUrl: "",
+      videoId: "",
+      userId: req.userId,
+      regenerate: true,
     });
 
     return { id: article.id, status: article.status };
@@ -199,6 +297,25 @@ export class ArticleController {
     });
 
     return { publicationId: publication.id, status: publication.status };
+  }
+
+  @Delete(":id/site")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unpublishSite(
+    @Param("id") id: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+
+    const publications = await this.publishRepo.findByArticleId(id);
+    await Promise.all(
+      publications
+        .filter((p) => p.platform === "site")
+        .map((p) => this.publishRepo.delete(p.id)),
+    );
   }
 
   @Get(":id/publications")

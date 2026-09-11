@@ -1,7 +1,9 @@
 import { Injectable, Logger, Inject } from "@nestjs/common";
 import type {
+  Article,
   ArticleRepository,
   ConverterService,
+  ExtractedContent,
 } from "../../domain/index";
 import type { AiTransformRequest } from "@repo/types";
 import { transformTranscript } from "@repo/ai";
@@ -37,24 +39,22 @@ export class ProcessArticleUseCase {
         transcript = article.transcript;
         title = article.title?.trim() || "Untitled";
       } else {
-        // Step 1: Extract transcript
+        // Step 1: Extract source content
         await this.articleRepo.updateStatus(articleId, "EXTRACTING");
-        this.logger.log(`Extracting transcript for article ${articleId}`);
+        this.logger.log(`Extracting ${article.sourceType} source for ${articleId}`);
 
-        const extracted = await this.converter.extractTranscript(
-          article.youtubeUrl,
-        );
+        const extracted = await this.extractSource(article);
 
         title = article.title?.trim() || extracted.title;
 
         await this.articleRepo.updateTranscript(articleId, {
           title,
-          transcript: extracted.transcript,
+          transcript: extracted.text,
           durationSeconds: extracted.durationSeconds,
           channel: article.channel?.trim() || extracted.channel,
         });
 
-        transcript = extracted.transcript;
+        transcript = extracted.text;
       }
 
       // Step 2: AI transformation
@@ -66,6 +66,8 @@ export class ProcessArticleUseCase {
       );
 
       const routes = await this.aiRoutes.resolve(article.userId);
+      const aiSource: "user" | "platform" =
+        routes && routes.length > 0 ? "user" : "platform";
 
       const aiResult = await transformTranscript({
         transcript,
@@ -80,6 +82,7 @@ export class ProcessArticleUseCase {
         content: aiResult.content,
         summary: aiResult.summary,
         aiModel: aiResult.model,
+        aiSource,
         metaTitle: aiResult.seo.metaTitle,
         metaDescription: aiResult.seo.metaDescription,
         slug: aiResult.seo.slug,
@@ -96,6 +99,29 @@ export class ProcessArticleUseCase {
       await this.articleRepo.markFailed(articleId, msg);
       this.logger.error(`Article ${articleId} failed: ${msg}`);
       throw error;
+    }
+  }
+
+  private async extractSource(article: Article): Promise<ExtractedContent> {
+    switch (article.sourceType) {
+      case "url":
+        if (!article.sourceUrl) throw new Error("Source URL is missing");
+        return this.converter.extractUrl(article.sourceUrl);
+
+      case "feed":
+        if (!article.sourceUrl || !article.sourceItemUrl) {
+          throw new Error("Feed source is missing a feed or episode URL");
+        }
+        return this.converter.extractFeedItem({
+          feedUrl: article.sourceUrl,
+          itemUrl: article.sourceItemUrl,
+        });
+
+      case "document":
+        throw new Error("Document source has no stored content");
+
+      default:
+        return this.converter.extractUrl(article.youtubeUrl);
     }
   }
 }

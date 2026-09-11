@@ -93,8 +93,8 @@ async function getRouter(): Promise<unknown> {
       apiKey: process.env.OPENCODE_API_KEY,
       baseUrl: process.env.OPENCODE_BASE_URL || "https://opencode.ai/zen/go/v1",
       headers: {
-        "x-opencode-session": "youtube-to-article-" + Date.now(),
-        "user-agent": "youtube-to-article/1.0",
+        "x-opencode-session": "inkfeed-" + Date.now(),
+        "user-agent": "inkfeed/1.0",
       },
       limit: { rpm: 30 },
     });
@@ -440,4 +440,28 @@ export async function transformToFormat(
     .trim();
 
   return { content, model };
+}
+
+// Send a tiny request through a single route to verify the key/model work.
+export interface AiRouteTestResult {
+  ok: boolean;
+  model: string;
+  latencyMs: number;
+  sample: string;
+}
+
+export async function testRoute(route: AiRoute): Promise<AiRouteTestResult> {
+  const started = Date.now();
+  const { raw, model } = await complete(
+    "You are a connectivity check. Follow the instruction exactly.",
+    "Reply with exactly the word: ok",
+    { temperature: 0, maxTokens: 64 },
+    [route],
+  );
+  return {
+    ok: true,
+    model,
+    latencyMs: Date.now() - started,
+    sample: raw.trim().slice(0, 200),
+  };
 }

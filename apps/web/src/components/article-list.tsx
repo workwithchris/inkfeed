@@ -8,6 +8,7 @@ import {
   deleteArticle,
   type ArticleResponse,
   type PublicationResponse,
+  type SourceType,
 } from "@/lib/api";
 import { PlatformIcon } from "./platform-icon";
 
@@ -15,12 +16,81 @@ const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
   hashnode: "Hashnode",
   blogger: "Blogger",
+  site: "This site",
+  webhook: "Webhook",
 };
+
+const SOURCE_LABEL: Record<SourceType, string> = {
+  youtube: "YouTube",
+  url: "Article",
+  feed: "Podcast",
+  document: "Document",
+  manual: "Written",
+};
+
+function SourceIcon({
+  type,
+  className = "h-5 w-5",
+}: {
+  type: SourceType;
+  className?: string;
+}) {
+  if (type === "youtube") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+        <path d="M8 5v14l11-7z" />
+      </svg>
+    );
+  }
+
+  const paths = {
+    url: (
+      <>
+        <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.5 1.5" />
+        <path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.5-1.5" />
+      </>
+    ),
+    feed: (
+      <>
+        <path d="M4 11a9 9 0 0 1 9 9" />
+        <path d="M4 4a16 16 0 0 1 16 16" />
+        <circle cx="5" cy="19" r="1.4" />
+      </>
+    ),
+    document: (
+      <>
+        <path d="M14 3v5h5" />
+        <path d="M6 3h8l5 5v13H6z" />
+      </>
+    ),
+    manual: (
+      <>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </>
+    ),
+  }[type];
+
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {paths}
+    </svg>
+  );
+}
 
 function PublishedLinks({ items }: { items: PublicationResponse[] }) {
   if (!items.length) return null;
   return (
-    <span className="hidden items-center gap-1 md:inline-flex">
+    <span className="hidden items-center gap-0.5 md:inline-flex">
       {items.map((p) => (
         <a
           key={p.id}
@@ -28,7 +98,7 @@ function PublishedLinks({ items }: { items: PublicationResponse[] }) {
           target="_blank"
           rel="noreferrer"
           title={`Published on ${PLATFORM_NAME[p.platform] ?? p.platform}`}
-          className="flex h-6 w-6 items-center justify-center rounded-sm text-mute transition-colors hover:bg-hairline-soft hover:text-ink"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-mute transition-colors hover:bg-hairline-soft hover:text-ink"
         >
           <PlatformIcon platform={p.platform} className="h-3.5 w-3.5" />
         </a>
@@ -38,25 +108,31 @@ function PublishedLinks({ items }: { items: PublicationResponse[] }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const dots: Record<string, string> = {
-    COMPLETED: "bg-ink",
-    FAILED: "bg-error",
-    PENDING: "bg-faint",
-    EXTRACTING: "bg-link",
-    SYNTHESIZING: "bg-link",
+  const map: Record<string, { dot: string; label: string; pulse?: boolean }> = {
+    COMPLETED: { dot: "bg-ink", label: "Ready" },
+    FAILED: { dot: "bg-error", label: "Failed" },
+    PENDING: { dot: "bg-faint", label: "Queued" },
+    EXTRACTING: { dot: "bg-link", label: "Extracting", pulse: true },
+    SYNTHESIZING: { dot: "bg-link", label: "Writing", pulse: true },
   };
+  const s = map[status] ?? { dot: "bg-faint", label: status };
 
   return (
-    <span className="hidden items-center gap-2 font-mono text-eyebrow text-mute sm:inline-flex">
-      <span className={`h-1.5 w-1.5 rounded-full ${dots[status] ?? "bg-faint"}`} />
-      {status.charAt(0) + status.slice(1).toLowerCase()}
+    <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-hairline bg-elevated px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-mute sm:inline-flex">
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${s.dot} ${
+          s.pulse ? "animate-pulse" : ""
+        }`}
+      />
+      {s.label}
     </span>
   );
 }
 
 function displayTitle(article: ArticleResponse): string {
   const raw = article.title?.trim();
-  return raw && raw !== "Untitled Video" ? raw : article.youtubeUrl;
+  if (raw && raw !== "Untitled Video") return raw;
+  return article.sourceUrl || article.sourceItemUrl || "Untitled";
 }
 
 export function ArticleList() {
@@ -93,74 +169,98 @@ export function ArticleList() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="eyebrow">Recent</p>
+        <p className="eyebrow">Library</p>
         <span className="font-mono text-eyebrow text-faint">
           {articles.length} {articles.length === 1 ? "article" : "articles"}
         </span>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-hairline bg-elevated">
-        {articles.map((article: ArticleResponse) => (
-          <div
-            key={article.id}
-            className="group flex items-center gap-2 border-b border-hairline pr-2 transition-colors last:border-b-0 hover:bg-canvas"
-          >
-            <Link
-              href={`/app/articles/${article.id}`}
-              className="flex min-w-0 flex-1 items-center gap-4 py-3 pl-4"
+        {articles.map((article: ArticleResponse) => {
+          const published = publishedByArticle.get(article.id) ?? [];
+          return (
+            <div
+              key={article.id}
+              className="group flex items-center gap-2 border-b border-hairline pr-2 transition-colors last:border-b-0 hover:bg-canvas"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-hairline bg-canvas text-mute transition-colors group-hover:text-ink">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-body-md font-medium text-ink">
-                  {displayTitle(article)}
-                </span>
-                <span className="mt-1 flex items-center gap-2 font-mono text-body-sm text-faint">
-                  {article.channel && (
-                    <>
-                      <span className="truncate">{article.channel}</span>
-                      <span>·</span>
-                    </>
+              <Link
+                href={`/app/articles/${article.id}`}
+                className="flex min-w-0 flex-1 items-center gap-4 py-3 pl-3"
+              >
+                <span className="flex h-12 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-hairline bg-canvas text-mute">
+                  {article.coverImageUrl ? (
+                    <img
+                      src={article.coverImageUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <SourceIcon type={article.sourceType} className="h-5 w-5" />
                   )}
-                  <span className="shrink-0">
-                    {new Date(article.createdAt).toLocaleDateString()}
+                </span>
+
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-body-md font-medium text-ink">
+                    {displayTitle(article)}
+                  </span>
+                  <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-body-sm text-faint">
+                    <span className="text-mute">
+                      {SOURCE_LABEL[article.sourceType] ?? article.sourceType}
+                    </span>
+                    {article.channel && (
+                      <>
+                        <span>·</span>
+                        <span className="max-w-[18ch] truncate">
+                          {article.channel}
+                        </span>
+                      </>
+                    )}
+                    {article.readingTimeMinutes ? (
+                      <>
+                        <span>·</span>
+                        <span className="shrink-0">
+                          {article.readingTimeMinutes} min
+                        </span>
+                      </>
+                    ) : null}
+                    <span>·</span>
+                    <span className="shrink-0">
+                      {new Date(article.createdAt).toLocaleDateString()}
+                    </span>
                   </span>
                 </span>
-              </span>
-            </Link>
+              </Link>
 
-            <PublishedLinks items={publishedByArticle.get(article.id) ?? []} />
+              <PublishedLinks items={published} />
 
-            <StatusBadge status={article.status} />
+              <StatusBadge status={article.status} />
 
-            <button
-              onClick={() => {
-                if (!window.confirm("Delete this article?")) return;
-                deleteMutation.mutate(article.id);
-              }}
-              disabled={deleteMutation.isPending}
-              aria-label="Delete article"
-              className="rounded-sm p-2 text-faint transition-colors hover:bg-hairline-soft hover:text-error disabled:opacity-40"
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
+              <button
+                onClick={() => {
+                  if (!window.confirm("Delete this article?")) return;
+                  deleteMutation.mutate(article.id);
+                }}
+                disabled={deleteMutation.isPending}
+                aria-label="Delete article"
+                className="rounded-md p-2 text-faint opacity-0 transition-all hover:bg-hairline-soft hover:text-error focus:opacity-100 disabled:opacity-40 group-hover:opacity-100"
               >
-                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-              </svg>
-            </button>
-          </div>
-        ))}
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                </svg>
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

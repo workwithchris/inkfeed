@@ -1,10 +1,14 @@
 import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
+import { json, urlencoded } from "express";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Documents are uploaded as base64 JSON, so raise the body limit.
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.use(json({ limit: "20mb" }));
+  app.use(urlencoded({ extended: true }));
 
   app.useGlobalPipes(
     new ValidationPipe({

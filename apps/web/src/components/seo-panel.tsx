@@ -26,8 +26,8 @@ function buildMarkdown(a: ArticleResponse): string {
     `slug: ${a.slug ?? ""}`,
     `keywords: ${(a.keywords ?? []).join(", ")}`,
     `tags: ${(a.tags ?? []).join(", ")}`,
-    `source: ${a.youtubeUrl}`,
   ];
+  if (a.youtubeUrl) lines.push(`source: ${a.youtubeUrl}`);
   if (a.channel) lines.push(`author: ${a.channel}`);
   lines.push(`date: ${new Date(a.createdAt).toISOString().slice(0, 10)}`);
   lines.push("---", "", stripTldr(a.content));
@@ -43,7 +43,7 @@ function buildJson(a: ArticleResponse): string {
       keywords: a.keywords ?? [],
       tags: a.tags ?? [],
       canonical: canonical(a),
-      source: a.youtubeUrl,
+      source: a.youtubeUrl || null,
       author: a.channel,
       readingTimeMinutes: a.readingTimeMinutes,
       content: stripTldr(a.content),
@@ -117,7 +117,7 @@ export function SeoPanel({ article }: { article: ArticleResponse }) {
   };
 
   return (
-    <section className="mt-10 rounded-lg border border-hairline bg-elevated p-6">
+    <section className="mt-10 border-t border-hairline pt-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="eyebrow">SEO &amp; export</p>
         {article.readingTimeMinutes && (
@@ -181,7 +181,7 @@ export function SeoPanel({ article }: { article: ArticleResponse }) {
               onClick={() => setTab(t.id)}
               className={`rounded-sm px-2.5 py-1 text-button-md transition-colors ${
                 tab === t.id
-                  ? "bg-ink text-white"
+                  ? "bg-ink text-on-ink"
                   : "text-body hover:bg-canvas"
               }`}
             >

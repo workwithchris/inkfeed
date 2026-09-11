@@ -36,7 +36,7 @@ function ToolbarButton({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`flex h-8 min-w-8 items-center justify-center rounded-sm px-1.5 text-body transition-colors disabled:pointer-events-none disabled:opacity-30 ${
-        active ? "bg-ink text-white" : "hover:bg-canvas hover:text-ink"
+        active ? "bg-ink text-on-ink" : "hover:bg-canvas hover:text-ink"
       }`}
     >
       {children}

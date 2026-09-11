@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { QueryProvider } from "@/components/query-provider";
 import { ConnectionManager } from "@/components/connection-manager";
 import { ProviderManager } from "@/components/provider-manager";
+import { ProfileManager } from "@/components/profile-manager";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -30,6 +31,12 @@ export default function SettingsPage() {
         </section>
 
         <section className="container-page py-12">
+          <div className="max-w-3xl">
+            <ProfileManager />
+          </div>
+        </section>
+
+        <section className="container-page border-t border-hairline py-12">
           <div className="max-w-3xl">
             <ConnectionManager />
           </div>

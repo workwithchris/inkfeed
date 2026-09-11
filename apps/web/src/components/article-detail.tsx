@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -29,6 +29,8 @@ const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
   hashnode: "Hashnode",
   blogger: "Blogger",
+  site: "This site",
+  webhook: "Webhook",
 };
 
 function StatusPill({ status }: { status: string }) {
@@ -70,6 +72,9 @@ export function ArticleDetail({ id }: { id: string }) {
   });
   const published = (publications ?? []).filter(
     (p) => p.status === "PUBLISHED" && p.externalUrl,
+  );
+  const siteLive = (publications ?? []).some(
+    (p) => p.platform === "site" && p.status === "PUBLISHED",
   );
 
   const handleEvent = useCallback(
@@ -121,6 +126,21 @@ export function ArticleDetail({ id }: { id: string }) {
     setConfirmRegen(false);
     setEditing(true);
   };
+
+  // A freshly created blank article opens straight into the editor.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (
+      !autoOpened.current &&
+      article &&
+      article.status === "COMPLETED" &&
+      article.sourceType === "manual" &&
+      !article.content.trim()
+    ) {
+      autoOpened.current = true;
+      setEditing(true);
+    }
+  }, [article]);
 
   if (isLoading || !article) {
     return (
@@ -234,7 +254,7 @@ export function ArticleDetail({ id }: { id: string }) {
               )}
 
               {/* Actions */}
-              <div className="mt-6 flex flex-col gap-3 rounded-md border border-hairline bg-elevated p-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-6 flex flex-wrap items-center gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <button onClick={startEdit} className="btn-sm-primary">
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -244,10 +264,21 @@ export function ArticleDetail({ id }: { id: string }) {
                     Edit article
                   </button>
                   <a
-                    href={`/article/${article.slug ?? article.id}`}
+                    href={
+                      siteLive
+                        ? `/article/${article.slug ?? article.id}`
+                        : undefined
+                    }
                     target="_blank"
                     rel="noreferrer"
-                    className="btn-sm-ghost"
+                    aria-disabled={!siteLive}
+                    title={siteLive ? undefined : "Publish to this site first"}
+                    onClick={(e) => {
+                      if (!siteLive) e.preventDefault();
+                    }}
+                    className={`btn-sm-ghost ${
+                      siteLive ? "" : "pointer-events-none opacity-40"
+                    }`}
                   >
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <path d="M14 5h5v5M19 5l-8 8M19 14v5H5V5h5" />
@@ -256,6 +287,8 @@ export function ArticleDetail({ id }: { id: string }) {
                   </a>
                   <button
                     type="button"
+                    disabled={!siteLive}
+                    title={siteLive ? undefined : "Publish to this site first"}
                     onClick={() => {
                       const origin = window.location.origin;
                       const url = `${origin}/article/${article.slug ?? article.id}`;
@@ -287,47 +320,48 @@ export function ArticleDetail({ id }: { id: string }) {
                   </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:border-l sm:border-hairline sm:pl-3">
-                  {confirmRegen ? (
-                    <>
-                      <span className="px-1 text-body-sm text-mute">
-                        Overwrite with a new draft?
-                      </span>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  {article.sourceType !== "manual" &&
+                    (confirmRegen ? (
+                      <>
+                        <span className="px-1 text-body-sm text-mute">
+                          Overwrite with a new draft?
+                        </span>
+                        <button
+                          onClick={() => setConfirmRegen(false)}
+                          className="btn-sm-ghost"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => regenerateMutation.mutate()}
+                          disabled={regenerateMutation.isPending}
+                          className="btn-sm-primary"
+                        >
+                          {regenerateMutation.isPending
+                            ? "Regenerating…"
+                            : "Confirm"}
+                        </button>
+                      </>
+                    ) : (
                       <button
-                        onClick={() => setConfirmRegen(false)}
+                        onClick={() => setConfirmRegen(true)}
                         className="btn-sm-ghost"
                       >
-                        Cancel
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+                          <path d="M21 3v5h-5" />
+                        </svg>
+                        Regenerate
                       </button>
-                      <button
-                        onClick={() => regenerateMutation.mutate()}
-                        disabled={regenerateMutation.isPending}
-                        className="btn-sm-primary"
-                      >
-                        {regenerateMutation.isPending
-                          ? "Regenerating…"
-                          : "Confirm"}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmRegen(true)}
-                      className="btn-sm-ghost"
-                    >
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-                        <path d="M21 3v5h-5" />
-                      </svg>
-                      Regenerate
-                    </button>
-                  )}
+                    ))}
                 </div>
               </div>
 
               {!!article.summary?.trim() && (
-                <div className="mt-8 rounded-md border border-hairline bg-hairline-soft p-6">
+                <div className="mt-8 border-l-2 border-ink pl-5">
                   <p className="eyebrow text-ink">Summary</p>
-                  <p className="mt-3 text-body-lg text-ink">{article.summary}</p>
+                  <p className="mt-2 text-body-lg text-ink">{article.summary}</p>
                 </div>
               )}
 
@@ -343,16 +377,34 @@ export function ArticleDetail({ id }: { id: string }) {
             </div>
 
             {/* Sidebar */}
-            <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+            <aside className="flex flex-col gap-8 lg:sticky lg:top-24 lg:self-start">
               <PublishDialog article={article} />
 
-              <div className="card">
+              <div className="border-t border-hairline pt-8">
                 <p className="eyebrow">Details</p>
                 <dl className="mt-4 divide-y divide-hairline text-body-sm">
                   <div className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
                     <dt className="text-mute">Model</dt>
                     <dd className="truncate text-ink">
                       {article.aiModel || "—"}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+                    <dt className="text-mute">AI source</dt>
+                    <dd className="text-ink">
+                      {article.aiSource === "user" ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-ink" />
+                          Your provider
+                        </span>
+                      ) : article.aiSource === "platform" ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-faint" />
+                          Platform default
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
@@ -366,7 +418,9 @@ export function ArticleDetail({ id }: { id: string }) {
                   <div className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
                     <dt className="text-mute">Source</dt>
                     <dd className="truncate text-ink">
-                      {article.channel || "Video"}
+                      {article.sourceType === "manual"
+                        ? "Written"
+                        : article.channel || "Video"}
                     </dd>
                   </div>
                 </dl>
@@ -409,7 +463,7 @@ export function ArticleDetail({ id }: { id: string }) {
                     <span
                       className={`flex h-6 w-6 items-center justify-center rounded-full font-mono text-[11px] ${
                         complete
-                          ? "bg-ink text-white"
+                          ? "bg-ink text-on-ink"
                           : current
                             ? "border-2 border-ink text-ink"
                             : "border border-hairline text-faint"

@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import { SiteNav } from "@/components/site-nav";
-import { SiteFooter } from "@/components/site-footer";
 import { AuthTokenBridge } from "@/components/auth-token-bridge";
 
 export const metadata: Metadata = {
   title: {
-    default: "YouTube to Article",
-    template: "%s — YouTube to Article",
+    default: "Inkfeed",
+    template: "%s — Inkfeed",
   },
-  description: "Transform YouTube videos into polished articles with AI",
+  description:
+    "Turn videos, articles, feeds, and documents into polished, publishable articles with AI",
 };
+
+const themeScript = `(function(){try{var k="yta-theme";var s=localStorage.getItem(k);var d=s?s==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;var e=document.documentElement;e.classList.toggle("dark",d);e.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -20,12 +21,11 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body className="flex min-h-screen flex-col">
+          <script dangerouslySetInnerHTML={{ __html: themeScript }} />
           <AuthTokenBridge />
-          <SiteNav />
-          <div className="flex-1">{children}</div>
-          <SiteFooter />
+          {children}
         </body>
       </html>
     </ClerkProvider>

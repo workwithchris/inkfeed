@@ -12,7 +12,9 @@ export type PublishPlatform =
   | "hashnode"
   | "blogger"
   | "linkedin"
-  | "github";
+  | "github"
+  | "site"
+  | "webhook";
 
 @Entity("connections")
 export class ConnectionEntity {

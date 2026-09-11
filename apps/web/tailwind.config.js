@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
+const withVar = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+
 module.exports = {
+  darkMode: "class",
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
@@ -8,24 +11,25 @@ module.exports = {
         mono: ["Geist Mono", "JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
-        ink: "#171717",
-        body: "#4d4d4d",
-        mute: "#8f8f8f",
-        faint: "#a1a1a1",
-        hairline: "#ebebeb",
-        "hairline-soft": "#f2f2f2",
-        canvas: "#fafafa",
-        elevated: "#ffffff",
-        link: "#0070f3",
-        "link-deep": "#0761d1",
-        "link-soft": "#d3e5ff",
-        error: "#ee0000",
-        "error-deep": "#c50000",
-        warning: "#f5a623",
-        violet: "#7928ca",
-        cyan: "#50e3c2",
-        pink: "#ff0080",
-        magenta: "#eb367f",
+        ink: withVar("ink"),
+        body: withVar("body"),
+        mute: withVar("mute"),
+        faint: withVar("faint"),
+        hairline: withVar("hairline"),
+        "hairline-soft": withVar("hairline-soft"),
+        canvas: withVar("canvas"),
+        elevated: withVar("elevated"),
+        "on-ink": withVar("on-ink"),
+        link: withVar("link"),
+        "link-deep": withVar("link-deep"),
+        "link-soft": withVar("link-soft"),
+        error: withVar("error"),
+        "error-deep": withVar("error-deep"),
+        warning: withVar("warning"),
+        violet: withVar("violet"),
+        cyan: withVar("cyan"),
+        pink: withVar("pink"),
+        magenta: withVar("magenta"),
       },
       borderRadius: {
         none: "0px",

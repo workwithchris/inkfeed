@@ -24,6 +24,7 @@ export class AuthService {
 
     let email: string;
     let name: string | null = null;
+    let username: string | null = null;
     try {
       const clerk = createClerkClient({ secretKey });
       const u = await clerk.users.getUser(clerkUserId);
@@ -33,10 +34,42 @@ export class AuthService {
         [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
         u.username ||
         null;
+      username = u.username || null;
     } catch {
       throw new UnauthorizedException("Unable to load Clerk user");
     }
 
-    return this.users.upsertFromClerk({ clerkUserId, email, name });
+    const user = await this.users.upsertFromClerk({ clerkUserId, email, name });
+
+    // First-time users get a profile slug derived from their Clerk username
+    // (falling back to the email local-part). It is editable later in Settings.
+    if (!user.username) {
+      const base = slugify(
+        username ?? email.split("@")[0] ?? `user-${user.id.slice(0, 8)}`,
+      );
+      try {
+        return await this.users.updateUsername(user.id, base);
+      } catch {
+        return await this.users.updateUsername(
+          user.id,
+          `${base}-${user.id.slice(0, 6)}`,
+        );
+      }
+    }
+
+    return user;
   }
+}
+
+// Lowercase, alphanumeric + hyphen, no leading/trailing hyphen.
+function slugify(raw: string): string {
+  const cleaned = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return /^[a-z0-9][a-z0-9-]{2,31}$/.test(cleaned)
+    ? cleaned
+    : `user-${cleaned}`.slice(0, 32).replace(/-$/, "");
 }

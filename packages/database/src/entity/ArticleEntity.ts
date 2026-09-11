@@ -36,6 +36,17 @@ export class ArticleEntity {
   @Column()
   videoId!: string;
 
+  // Where the source content came from: "youtube" | "url" | "document" | "feed".
+  @Column({ type: "varchar", default: "youtube" })
+  sourceType!: string;
+
+  @Column({ type: "text", nullable: true })
+  sourceUrl!: string | null;
+
+  // For "feed" sources: the selected episode/item URL.
+  @Column({ type: "text", nullable: true })
+  sourceItemUrl!: string | null;
+
   @Column({ default: "" })
   title!: string;
 
@@ -80,6 +91,11 @@ export class ArticleEntity {
 
   @Column({ type: "varchar", nullable: true })
   aiModel!: string | null;
+
+  // Whether generation used the user's own provider ("user") or the
+  // server/env default ("platform").
+  @Column({ type: "varchar", nullable: true })
+  aiSource!: "user" | "platform" | null;
 
   @Column({ type: "text", nullable: true })
   errorMessage!: string | null;

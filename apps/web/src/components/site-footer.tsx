@@ -33,13 +33,13 @@ export function SiteFooter() {
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <Link href="/" className="flex items-center gap-2 text-ink">
-              <svg width="16" height="16" viewBox="0 0 76 65" fill="currentColor" aria-hidden>
-                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
               </svg>
-              <span className="text-label-sm">YouTube to Article</span>
+              <span className="text-label-sm">Inkfeed</span>
             </Link>
             <p className="mt-3 text-body-sm text-mute">
-              Transform YouTube videos into polished articles with AI.
+              Turn any source into a polished, publishable article.
             </p>
           </div>
 
@@ -63,7 +63,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-16 flex flex-col gap-3 border-t border-hairline pt-6 text-body-sm text-mute sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} YouTube to Article. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Inkfeed. All rights reserved.</p>
           <p className="font-mono">Built for writers, not transcribers.</p>
         </div>
       </div>

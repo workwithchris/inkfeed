@@ -1,9 +1,10 @@
-# YouTube to Article
+# Inkfeed
 
-Turn a YouTube URL into a polished, SEO-ready article and publish it to your blog
-platforms. Paste a link, watch the pipeline pull the transcript, synthesize an
-article with an LLM, edit it, then publish to Dev.to, Hashnode, Blogger, LinkedIn,
-or GitHub.
+Turn a source — a YouTube video, an article URL, an RSS/podcast episode, or a
+PDF/DOCX — into a polished, SEO-ready article and publish it to your platforms
+(or your own built-in hub). Paste a link or drop a file, watch the pipeline
+extract the content, synthesize an article with an LLM, edit it, then publish to
+Dev.to, Hashnode, Blogger, LinkedIn, GitHub, a webhook, or this site.
 
 ## Stack
 
@@ -21,12 +22,12 @@ or GitHub.
 apps/web (Next.js)  ──►  apps/api (NestJS)  ──►  Postgres
                               │   │
                               │   ├─► Redis / BullMQ  (process + publish queues)
-                              │   ├─► services/converter (FastAPI)  ─► YouTube transcript
+                              │   ├─► services/converter (FastAPI)  ─► content extraction
                               │   └─► @repo/ai ─► @ai-router/core ─► LLM providers
                               └─► publishers: devto · hashnode · blogger · linkedin · github
 ```
 
-Flow: `POST /api/articles` enqueues a job → converter extracts the transcript →
+Flow: `POST /api/articles` enqueues a job → converter extracts the content →
 `@repo/ai` generates Markdown + SEO frontmatter → article marked `COMPLETED` →
 `POST /api/articles/:id/publish` enqueues a publish job to a connected platform.
 Live updates stream over SSE (`GET /api/articles/:id/events`).
@@ -72,6 +73,47 @@ See [`.env.example`](./.env.example) for the full list. Key groups:
 - **Clerk** — `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - **Encryption** — `TOKEN_ENCRYPTION_KEY` (encrypts stored platform tokens)
 - **Publishing OAuth** — `GOOGLE_*` (Blogger), `LINKEDIN_*`, `GITHUB_*`
+- **Public profiles** — `APP_DOMAIN` / `NEXT_PUBLIC_APP_DOMAIN` (e.g. `inkfeed.online`)
+
+## Public profiles
+
+Every user gets a public profile at their username subdomain, e.g.
+`https://jane.inkfeed.online`. It lists every article the user has
+published to the built-in **site** destination.
+
+The username is derived from the Clerk username on first sign-in (falling back
+to the email local-part) and can be changed under **Settings → Public profile**.
+
+### How it works
+
+- `apps/web` middleware rewrites a request to the root of a profile subdomain
+  (`jane.inkfeed.online/`) to `/u/jane`, rendering the profile page.
+  Article links (`/article/:slug`) resolve normally on the subdomain.
+- `apps/api` serves `GET /api/public/profiles/:username` (unauthenticated) and
+  `GET/PATCH /api/profile` (authenticated username management).
+- Published articles and canonical URLs use the writer's subdomain when
+  `APP_DOMAIN` is set.
+
+### Setting up username subdomains (Cloudflare)
+
+1. In **Cloudflare → DNS**, add a wildcard record pointing at your app host:
+   - Type `CNAME`, name `*`, content your app's hostname (e.g. the Vercel/Cloudflare
+     Pages host), proxied. This covers `anything.inkfeed.online`.
+2. TLS is handled automatically: Cloudflare's Universal SSL certificate covers
+   the first-level `*.inkfeed.online` wildcard. For deeper nesting or a
+   custom setup, upload a wildcard Origin Certificate.
+3. In the app's host platform (e.g. Vercel), add `*.inkfeed.online` as a
+   custom domain so the certificate and routing include subdomains.
+4. Set the env vars on the API and web deployments:
+
+   ```env
+   APP_DOMAIN=inkfeed.online
+   NEXT_PUBLIC_APP_DOMAIN=inkfeed.online
+   ```
+
+Leave both blank in local development; profile URLs still work at
+`/u/:username` (useful for local testing).
+
 
 ## Scripts
 
@@ -94,6 +136,7 @@ and `/api/publications` routes require a Clerk bearer token.
 | Method   | Route                              | Purpose                          |
 | -------- | ---------------------------------- | -------------------------------- |
 | `POST`   | `/api/articles`                    | Create article from a YouTube URL |
+| `POST`   | `/api/articles/manual`             | Create a blank article for the editor |
 | `GET`    | `/api/articles`                    | List current user's articles      |
 | `GET`    | `/api/articles/:id`                | Get one article                   |
 | `PATCH`  | `/api/articles/:id`                | Edit title / content              |
@@ -107,6 +150,9 @@ and `/api/publications` routes require a Clerk bearer token.
 | `GET`    | `/api/connections/blogger/authorize`  | Start Blogger OAuth            |
 | `GET`    | `/api/connections/linkedin/authorize` | Start LinkedIn OAuth           |
 | `GET`    | `/api/public/articles/:slugOrId`   | Public article permalink          |
+| `GET`    | `/api/public/profiles/:username`   | Public profile + published articles |
+| `GET`    | `/api/profile`                     | Current user's profile (username)  |
+| `PATCH`  | `/api/profile`                     | Update the current user's username |
 | `GET`    | `/api/health`                      | Health check                      |
 
 ## Project structure
@@ -121,7 +167,7 @@ packages/
   queue/          BullMQ queue definitions (@repo/queue)
   types/          Shared domain types (@repo/types)
 services/
-  converter/      FastAPI transcript extraction service
+  converter/      FastAPI content extraction service (MarkItDown + feeds)
 scripts/
   setup-ai-router.sh
 ```

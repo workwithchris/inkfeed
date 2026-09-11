@@ -7,6 +7,7 @@ import type {
   DerivativeKind,
   DerivativeStatus,
   Derivative,
+  SourceType,
 } from "@repo/types";
 
 export type {
@@ -17,6 +18,7 @@ export type {
   DerivativeKind,
   DerivativeStatus,
   Derivative,
+  SourceType,
 };
 
 // ─── Domain Entities (Pure - No ORM Dependencies) ─────────
@@ -25,6 +27,9 @@ export interface Article {
   userId: string;
   youtubeUrl: string;
   videoId: string;
+  sourceType: SourceType;
+  sourceUrl: string | null;
+  sourceItemUrl: string | null;
   title: string;
   content: string;
   summary: string | null;
@@ -40,6 +45,7 @@ export interface Article {
   durationSeconds: number | null;
   channel: string | null;
   aiModel: string | null;
+  aiSource: "user" | "platform" | null;
   errorMessage: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -65,6 +71,8 @@ export interface ArticleRepository {
   findById(id: string): Promise<Article | null>;
   findBySlug(slug: string): Promise<Article | null>;
   findByUserId(userId: string): Promise<Article[]>;
+  findSitePublishedByUserId(userId: string): Promise<Article[]>;
+  findSitePublishedFeed(query: PublicFeedQuery): Promise<PublicFeedResult>;
   updateStatus(id: string, status: JobStatus): Promise<void>;
   updateTranscript(id: string, data: TranscriptData): Promise<void>;
   updateContent(id: string, data: ContentData): Promise<void>;
@@ -72,6 +80,23 @@ export interface ArticleRepository {
   markCompleted(id: string): Promise<void>;
   updateEditable(id: string, data: EditableContentData): Promise<void>;
   delete(id: string): Promise<void>;
+}
+
+export interface PublicFeedQuery {
+  limit: number;
+  offset: number;
+  tag?: string;
+}
+
+export interface PublicFeedEntry {
+  article: Article;
+  authorUsername: string | null;
+  authorName: string | null;
+}
+
+export interface PublicFeedResult {
+  items: PublicFeedEntry[];
+  total: number;
 }
 
 export interface EditableContentData {
@@ -83,6 +108,7 @@ export interface EditableContentData {
   keywords?: string[] | null;
   tags?: string[] | null;
   coverImageUrl?: string | null;
+  readingTimeMinutes?: number | null;
 }
 
 // ─── Users ────────────────────────────────────────────────
@@ -90,16 +116,20 @@ export interface User {
   id: string;
   clerkUserId: string | null;
   email: string;
+  username: string | null;
   name: string | null;
 }
 
 export interface UserRepository {
+  findById(id: string): Promise<User | null>;
   findByClerkId(clerkUserId: string): Promise<User | null>;
+  findByUsername(username: string): Promise<User | null>;
   upsertFromClerk(data: {
     clerkUserId: string;
     email: string;
     name: string | null;
   }): Promise<User>;
+  updateUsername(userId: string, username: string): Promise<User>;
 }
 
 // ─── Publishing ───────────────────────────────────────────
@@ -123,6 +153,8 @@ export interface Publication {
   externalId: string | null;
   externalUrl: string | null;
   errorMessage: string | null;
+  responseStatus: number | null;
+  responseBody: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -157,8 +189,11 @@ export interface PublishRepository {
       externalId?: string | null;
       externalUrl?: string | null;
       errorMessage?: string | null;
+      responseStatus?: number | null;
+      responseBody?: string | null;
     },
   ): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 // ─── Repurposing (article derivatives) ────────────────────
@@ -184,6 +219,9 @@ export interface DerivativeRepository {
 }
 
 export interface PublishDraft {
+  articleId: string;
+  userId: string;
+  username: string | null;
   title: string;
   content: string;
   summary: string | null;
@@ -196,6 +234,8 @@ export interface PublishDraft {
 export interface PublishResult {
   externalId: string;
   url: string;
+  responseStatus?: number | null;
+  responseBody?: string | null;
 }
 
 export interface BlogPublisher {
@@ -214,6 +254,9 @@ export interface CreateArticleData {
   userId: string;
   youtubeUrl: string;
   videoId: string;
+  sourceType: SourceType;
+  sourceUrl: string | null;
+  sourceItemUrl: string | null;
   title?: string;
   channel?: string | null;
 }
@@ -229,6 +272,7 @@ export interface ContentData {
   content: string;
   summary: string;
   aiModel: string;
+  aiSource: "user" | "platform";
   metaTitle: string;
   metaDescription: string;
   slug: string;
@@ -238,13 +282,34 @@ export interface ContentData {
   coverImageUrl: string | null;
 }
 
+export interface ExtractedContent {
+  title: string;
+  text: string;
+  durationSeconds: number | null;
+  channel: string | null;
+}
+
+export interface FeedItem {
+  title: string;
+  link: string | null;
+  audioUrl: string | null;
+  publishedAt: string | null;
+  summary: string | null;
+}
+
+export interface FeedListing {
+  title: string;
+  items: FeedItem[];
+}
+
 export interface ConverterService {
-  extractTranscript(url: string): Promise<{
-    title: string;
-    transcript: string;
-    durationSeconds: number | null;
-    channel: string | null;
-  }>;
+  extractUrl(url: string): Promise<ExtractedContent>;
+  extractFile(input: { filename: string; data: Buffer }): Promise<ExtractedContent>;
+  extractFeedItem(input: {
+    feedUrl: string;
+    itemUrl: string;
+  }): Promise<ExtractedContent>;
+  listFeedItems(url: string): Promise<FeedListing>;
 }
 
 export interface ArticlePublisher {

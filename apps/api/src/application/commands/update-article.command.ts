@@ -30,7 +30,15 @@ export class UpdateArticleUseCase {
       throw new ForbiddenException("Not your article");
     }
 
-    await this.articles.updateEditable(articleId, data);
+    // Keep reading time in sync when the body changes.
+    const patch: EditableContentData = { ...data };
+    if (patch.content !== undefined) {
+      const words = patch.content.trim().split(/\s+/).filter(Boolean).length;
+      patch.readingTimeMinutes =
+        words > 0 ? Math.max(1, Math.round(words / 200)) : null;
+    }
+
+    await this.articles.updateEditable(articleId, patch);
     return (await this.articles.findById(articleId))!;
   }
 }

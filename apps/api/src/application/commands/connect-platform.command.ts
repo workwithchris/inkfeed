@@ -47,4 +47,19 @@ export class ConnectPlatformUseCase {
       blogName,
     });
   }
+
+  // The built-in "this site" destination is always available — no credential
+  // or user action required. Provision it lazily for each user.
+  async ensureBuiltIn(userId: string): Promise<void> {
+    const existing = await this.connections.findByUserId(userId);
+    if (existing.some((c) => c.platform === "site")) return;
+
+    await this.connections.create({
+      userId,
+      platform: "site",
+      credentialEnc: encryptSecret(""),
+      blogId: null,
+      blogName: "This site",
+    });
+  }
 }

@@ -19,7 +19,9 @@ import {
 } from "../../application/dtos/provider.dto";
 import { CreateAiProviderUseCase } from "../../application/commands/create-provider.command";
 import type { AiProviderRepository } from "../../domain/index";
+import { AiRouteResolver } from "../../infrastructure/ai/ai-route-resolver";
 import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+import { testRoute } from "@repo/ai";
 import type { Request } from "express";
 
 @Controller("api/providers")
@@ -29,6 +31,7 @@ export class ProviderController {
     private readonly createProvider: CreateAiProviderUseCase,
     @Inject("AiProviderRepository")
     private readonly providers: AiProviderRepository,
+    private readonly aiRoutes: AiRouteResolver,
   ) {}
 
   @Post()
@@ -43,6 +46,31 @@ export class ProviderController {
   @Get()
   async list(@Req() req: Request & { userId: string }) {
     return this.providers.findByUserId(req.userId);
+  }
+
+  @Post(":id/test")
+  @HttpCode(HttpStatus.OK)
+  async test(
+    @Param("id") id: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const provider = await this.providers.findById(id);
+    if (!provider || provider.userId !== req.userId) {
+      throw new NotFoundException(`Provider ${id} not found`);
+    }
+
+    try {
+      return await testRoute(this.aiRoutes.toRoute(provider));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Test failed";
+      return {
+        ok: false,
+        model: provider.model,
+        latencyMs: 0,
+        sample: "",
+        error: message,
+      };
+    }
   }
 
   @Patch(":id")

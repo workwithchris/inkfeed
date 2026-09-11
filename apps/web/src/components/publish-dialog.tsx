@@ -7,6 +7,7 @@ import {
   listConnections,
   listPublications,
   publishArticle,
+  unpublishArticleSite,
   type ArticleResponse,
   type ConnectionResponse,
   type PublicationResponse,
@@ -34,6 +35,8 @@ function platformLabel(platform: PublicationResponse["platform"]): string {
   if (platform === "hashnode") return "Hashnode";
   if (platform === "linkedin") return "LinkedIn";
   if (platform === "github") return "GitHub";
+  if (platform === "site") return "This site";
+  if (platform === "webhook") return "Webhook";
   return "Blogger";
 }
 
@@ -129,13 +132,30 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
     onError: (err: Error) => setError(err.message),
   });
 
+  const unpublishMutation = useMutation({
+    mutationFn: () => unpublishArticleSite(articleId),
+    onSuccess: () => {
+      setError("");
+      invalidate();
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
   const inFlight = publications?.some(
     (p) => p.status === "PENDING" || p.status === "PUBLISHING",
   );
   const lastFailed = publications?.find((p) => p.status === "FAILED");
 
+  const selectedConnection = publishableConnections?.find(
+    (c) => c.id === connectionId,
+  );
+  const selectedIsSite = selectedConnection?.platform === "site";
+  const sitePublished = publications?.some(
+    (p) => p.platform === "site" && p.status === "PUBLISHED",
+  );
+
   return (
-    <div className="card flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <p className="eyebrow">Publish</p>
         <Link
@@ -191,7 +211,7 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
                   <span
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
                       selected
-                        ? "border-ink bg-ink text-white"
+                        ? "border-ink bg-ink text-on-ink"
                         : "border-hairline"
                     }`}
                   >
@@ -250,7 +270,7 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
                       disabled={inFlight}
                       className={`flex-1 rounded-sm px-2 py-1 text-button-md transition-colors ${
                         active
-                          ? "bg-ink text-white"
+                          ? "bg-ink text-on-ink"
                           : "text-body hover:bg-elevated"
                       }`}
                     >
@@ -280,18 +300,34 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
             </div>
           </div>
 
-          <button
-            onClick={() => publishMutation.mutate()}
-            disabled={
-              !connectionId ||
-              replaceInvalid ||
-              publishMutation.isPending ||
-              inFlight
-            }
-            className="btn-sm-primary w-full"
-          >
-            {inFlight ? "Publishing…" : "Publish as draft"}
-          </button>
+          {selectedIsSite && sitePublished ? (
+            <button
+              onClick={() => unpublishMutation.mutate()}
+              disabled={unpublishMutation.isPending || inFlight}
+              className="btn-sm-ghost w-full"
+            >
+              {unpublishMutation.isPending
+                ? "Unpublishing…"
+                : "Unpublish from this site"}
+            </button>
+          ) : (
+            <button
+              onClick={() => publishMutation.mutate()}
+              disabled={
+                !connectionId ||
+                replaceInvalid ||
+                publishMutation.isPending ||
+                inFlight
+              }
+              className="btn-sm-primary w-full"
+            >
+              {inFlight
+                ? "Publishing…"
+                : selectedIsSite
+                  ? "Publish to this site"
+                  : "Publish as draft"}
+            </button>
+          )}
 
           {publishableConnections.length > 1 && (
             <button
@@ -321,46 +357,66 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
           <p className="eyebrow">History</p>
           <div className="flex flex-col">
             {publications.map((p: PublicationResponse) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-3 py-1.5 text-body-sm"
-              >
-                <PlatformIcon
-                  platform={p.platform}
-                  className="h-3.5 w-3.5 shrink-0 text-mute"
-                />
-                <span className="min-w-0 flex-1 truncate text-body">
-                  {platformLabel(p.platform)}
-                </span>
-                <span className="flex items-center gap-1.5 font-mono text-[11px] text-mute">
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      STATUS_DOT[p.status] ?? "bg-faint"
-                    }`}
+              <div key={p.id} className="py-1.5">
+                <div className="flex items-center gap-3 text-body-sm">
+                  <PlatformIcon
+                    platform={p.platform}
+                    className="h-3.5 w-3.5 shrink-0 text-mute"
                   />
-                  {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
-                </span>
-                {p.externalUrl && (
-                  <a
-                    href={p.externalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-faint transition-colors hover:text-ink"
-                    aria-label="View draft"
-                  >
-                    <svg
-                      className="h-3.5 w-3.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
+                  <span className="min-w-0 flex-1 truncate text-body">
+                    {platformLabel(p.platform)}
+                  </span>
+                  {p.responseStatus != null && (
+                    <span
+                      className={`font-mono text-[11px] ${
+                        p.responseStatus >= 200 && p.responseStatus < 300
+                          ? "text-mute"
+                          : "text-error"
+                      }`}
                     >
-                      <path d="M14 5h5v5M19 5l-8 8M19 14v5H5V5h5" />
-                    </svg>
-                  </a>
+                      HTTP {p.responseStatus}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5 font-mono text-[11px] text-mute">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        STATUS_DOT[p.status] ?? "bg-faint"
+                      }`}
+                    />
+                    {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
+                  </span>
+                  {p.externalUrl && (
+                    <a
+                      href={p.externalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-faint transition-colors hover:text-ink"
+                      aria-label="View draft"
+                    >
+                      <svg
+                        className="h-3.5 w-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M14 5h5v5M19 5l-8 8M19 14v5H5V5h5" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
+                {p.responseBody && (
+                  <details className="mt-1 pl-6">
+                    <summary className="cursor-pointer font-mono text-[11px] text-faint transition-colors hover:text-ink">
+                      Response body
+                    </summary>
+                    <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded-sm border border-hairline bg-canvas p-2 font-mono text-[11px] text-mute">
+                      {p.responseBody}
+                    </pre>
+                  </details>
                 )}
               </div>
             ))}

@@ -21,6 +21,11 @@ export class UserEntity {
   @Column({ unique: true })
   email!: string;
 
+  // Public profile slug, e.g. "john" -> https://john.inkfeed.online
+  @Index({ unique: true })
+  @Column({ type: "varchar", nullable: true })
+  username!: string | null;
+
   @Column({ type: "varchar", nullable: true })
   name!: string | null;
 

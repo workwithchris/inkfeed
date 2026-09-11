@@ -8,8 +8,8 @@ import {
 } from "class-validator";
 
 export class CreateConnectionDto {
-  @IsIn(["devto", "hashnode", "github"])
-  platform!: "devto" | "hashnode" | "github";
+  @IsIn(["devto", "hashnode", "github", "webhook"])
+  platform!: "devto" | "hashnode" | "github" | "webhook";
 
   @IsString()
   @IsNotEmpty()
