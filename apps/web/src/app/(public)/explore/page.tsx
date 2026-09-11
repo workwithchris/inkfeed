@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublicFeed } from "@/lib/api";
+import { SITE_URL } from "@/lib/public-urls";
 import { PublicArticleCard } from "@/components/public-article-card";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,9 @@ const PAGE_SIZE = 12;
 export const metadata: Metadata = {
   title: "Explore",
   description: "Read the latest articles published on Inkfeed.",
+  alternates: {
+    types: { "application/rss+xml": `${SITE_URL}/feed.xml` },
+  },
 };
 
 export default async function ExplorePage({

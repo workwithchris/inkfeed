@@ -4,34 +4,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getPublicArticle } from "@/lib/api";
 import { stripTldr } from "@/lib/content";
-
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
-const APP_DOMAIN = (process.env.NEXT_PUBLIC_APP_DOMAIN || "").replace(
-  /^\.+|\.+$/g,
-  "",
-);
-
-function baseProtocol(): string {
-  try {
-    return new URL(SITE).protocol.replace(":", "");
-  } catch {
-    return "https";
-  }
-}
-
-function articleCanonical(username: string | null, slugOrId: string): string {
-  if (username && APP_DOMAIN) {
-    return `${baseProtocol()}://${username}.${APP_DOMAIN}/article/${slugOrId}`;
-  }
-  return `${SITE}/article/${slugOrId}`;
-}
-
-function profileUrl(username: string): string {
-  if (APP_DOMAIN) {
-    return `${baseProtocol()}://${username}.${APP_DOMAIN}/`;
-  }
-  return `${SITE}/u/${username}`;
-}
+import {
+  SITE_URL as SITE,
+  articleUrl,
+  profileUrl,
+} from "@/lib/public-urls";
 
 function initials(value: string): string {
   return value
@@ -54,7 +31,7 @@ export async function generateMetadata({
   const title = article.metaTitle ?? article.title;
   const description =
     article.metaDescription ?? article.summary ?? undefined;
-  const canonical = articleCanonical(
+  const canonical = articleUrl(
     article.authorUsername,
     article.slug ?? article.id,
   );
@@ -104,8 +81,41 @@ export default async function PublicArticlePage({
   const authorLabel =
     article.authorName || (article.authorUsername ? `@${article.authorUsername}` : null);
 
+  const title = article.metaTitle ?? article.title;
+  const canonical = articleUrl(
+    article.authorUsername,
+    article.slug ?? article.id,
+  );
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description: article.metaDescription ?? article.summary ?? undefined,
+    image:
+      article.coverImageUrl ??
+      `${SITE}/api/og?title=${encodeURIComponent(title)}`,
+    datePublished: article.createdAt,
+    author: authorLabel
+      ? {
+          "@type": "Person",
+          name: article.authorName ?? article.authorUsername,
+          url: article.authorUsername
+            ? profileUrl(article.authorUsername)
+            : undefined,
+        }
+      : undefined,
+    mainEntityOfPage: canonical,
+    keywords: article.keywords?.join(", ") || undefined,
+  };
+
   return (
     <main className="container-page py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <article className="mx-auto max-w-2xl">
         {article.tags?.[0] && (
           <p className="eyebrow mb-4">{article.tags[0]}</p>

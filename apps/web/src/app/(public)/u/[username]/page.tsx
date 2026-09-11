@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPublicProfile } from "@/lib/api";
+import { SITE_URL } from "@/lib/public-urls";
 import { PublicArticleCard } from "@/components/public-article-card";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,11 @@ export async function generateMetadata({
   return {
     title: `${name} — Articles`,
     description: `Articles by ${name} on Inkfeed.`,
+    alternates: {
+      types: {
+        "application/rss+xml": `${SITE_URL}/u/${username}/rss.xml`,
+      },
+    },
   };
 }
 
