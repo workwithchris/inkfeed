@@ -141,6 +141,18 @@ export function ArticleList() {
   const { data: articles, isLoading } = useQuery({
     queryKey: ["articles"],
     queryFn: listArticles,
+    // Keep polling while any article is still being processed so the list
+    // reflects completion without a manual refresh.
+    refetchInterval: (query) => {
+      const data = query.state.data as ArticleResponse[] | undefined;
+      const inFlight = data?.some(
+        (a) =>
+          a.status === "PENDING" ||
+          a.status === "EXTRACTING" ||
+          a.status === "SYNTHESIZING",
+      );
+      return inFlight ? 3000 : false;
+    },
   });
 
   const { data: allPublications } = useQuery({
