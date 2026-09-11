@@ -3,9 +3,9 @@ import type {
   Connection,
   ConnectionRepository,
   PublishPlatform,
-} from "../../domain/index";
-import { PublisherRegistry } from "../../infrastructure/publishers/publisher.registry";
-import { encryptSecret } from "../../infrastructure/crypto/secret-box";
+} from "../../domain/index.js";
+import { PublisherRegistry } from "../../infrastructure/publishers/publisher.registry.js";
+import { encryptSecret } from "../../infrastructure/crypto/secret-box.js";
 
 @Injectable()
 export class ConnectPlatformUseCase {
@@ -48,7 +48,7 @@ export class ConnectPlatformUseCase {
     });
   }
 
-  // The built-in "this site" destination is always available — no credential
+  // The built-in InkFeed destination is always available — no credential
   // or user action required. Provision it lazily for each user.
   async ensureBuiltIn(userId: string): Promise<void> {
     const existing = await this.connections.findByUserId(userId);
@@ -59,7 +59,7 @@ export class ConnectPlatformUseCase {
       platform: "site",
       credentialEnc: encryptSecret(""),
       blogId: null,
-      blogName: "This site",
+      blogName: "InkFeed",
     });
   }
 }

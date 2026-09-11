@@ -35,7 +35,7 @@ function platformLabel(platform: PublicationResponse["platform"]): string {
   if (platform === "hashnode") return "Hashnode";
   if (platform === "linkedin") return "LinkedIn";
   if (platform === "github") return "GitHub";
-  if (platform === "site") return "This site";
+  if (platform === "site") return "InkFeed";
   if (platform === "webhook") return "Webhook";
   return "Blogger";
 }
@@ -308,7 +308,7 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
             >
               {unpublishMutation.isPending
                 ? "Unpublishing…"
-                : "Unpublish from this site"}
+                : "Unpublish from InkFeed"}
             </button>
           ) : (
             <button
@@ -324,7 +324,7 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
               {inFlight
                 ? "Publishing…"
                 : selectedIsSite
-                  ? "Publish to this site"
+                  ? "Publish to InkFeed"
                   : "Publish as draft"}
             </button>
           )}

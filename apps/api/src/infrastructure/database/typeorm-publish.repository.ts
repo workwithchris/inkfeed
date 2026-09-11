@@ -7,7 +7,7 @@ import type {
   PublishRepository,
   PublishPlatform,
   PublishStatus,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 @Injectable()
 export class TypeOrmPublishRepository implements PublishRepository {

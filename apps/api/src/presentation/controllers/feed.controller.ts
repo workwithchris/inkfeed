@@ -7,9 +7,9 @@ import {
   Inject,
   UseGuards,
 } from "@nestjs/common";
-import { InspectFeedDto } from "../../application/dtos/create-article.dto";
-import type { ConverterService } from "../../domain/index";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+import { InspectFeedDto } from "../../application/dtos/create-article.dto.js";
+import type { ConverterService } from "../../domain/index.js";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
 
 @Controller("api/feeds")
 @UseGuards(ClerkAuthGuard)

@@ -4,11 +4,11 @@ import type {
   ConnectionRepository,
   PublishRepository,
   UserRepository,
-} from "../../domain/index";
-import { PublisherRegistry } from "../../infrastructure/publishers/publisher.registry";
-import { PublishResponseError } from "../../infrastructure/publishers/publish-response";
-import { decryptSecret } from "../../infrastructure/crypto/secret-box";
-import { publicCanonicalUrl } from "../../infrastructure/publishers/public-urls";
+} from "../../domain/index.js";
+import { PublisherRegistry } from "../../infrastructure/publishers/publisher.registry.js";
+import { PublishResponseError } from "../../infrastructure/publishers/publish-response.js";
+import { decryptSecret } from "../../infrastructure/crypto/secret-box.js";
+import { publicCanonicalUrl } from "../../infrastructure/publishers/public-urls.js";
 
 export interface PublishOutcome {
   articleId: string;

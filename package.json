@@ -17,8 +17,8 @@
     "db:generate": "turbo db:generate"
   },
   "devDependencies": {
-    "turbo": "^2.4.4",
-    "typescript": "^5.7.3"
+    "turbo": "^2.10.12",
+    "typescript": "^6.0.3"
   },
   "packageManager": "npm@10.9.2"
 }

@@ -7,7 +7,7 @@ import type {
   DerivativeKind,
   DerivativeRepository,
   DerivativeStatus,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 @Injectable()
 export class TypeOrmDerivativeRepository implements DerivativeRepository {

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Inject } from "@nestjs/common";
-import type { ArticleRepository, Article } from "../../domain/index";
+import type { ArticleRepository, Article } from "../../domain/index.js";
 
 @Injectable()
 export class GetArticleQuery {

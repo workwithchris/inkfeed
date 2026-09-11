@@ -16,11 +16,11 @@ import {
 import {
   CreateAiProviderDto,
   UpdateAiProviderDto,
-} from "../../application/dtos/provider.dto";
-import { CreateAiProviderUseCase } from "../../application/commands/create-provider.command";
-import type { AiProviderRepository } from "../../domain/index";
-import { AiRouteResolver } from "../../infrastructure/ai/ai-route-resolver";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+} from "../../application/dtos/provider.dto.js";
+import { CreateAiProviderUseCase } from "../../application/commands/create-provider.command.js";
+import type { AiProviderRepository } from "../../domain/index.js";
+import { AiRouteResolver } from "../../infrastructure/ai/ai-route-resolver.js";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
 import { testRoute } from "@repo/ai";
 import type { Request } from "express";
 

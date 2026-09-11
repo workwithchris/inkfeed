@@ -4,8 +4,8 @@ import type {
   PublishDraft,
   PublishResult,
   PublishPlatform,
-} from "../../domain/index";
-import { articleUrl } from "./public-urls";
+} from "../../domain/index.js";
+import { articleUrl } from "./public-urls.js";
 
 // Built-in destination: "publishes" to this app's own public article page.
 // There is no external API — the side effect is that the article becomes
@@ -19,7 +19,7 @@ export class SitePublisher implements BlogPublisher {
     blogId: string | null;
     blogName: string | null;
   }> {
-    return { blogId: null, blogName: "This site" };
+    return { blogId: null, blogName: "InkFeed" };
   }
 
   async publish(

@@ -59,7 +59,7 @@ const HINTS: Partial<Record<PlatformId, string>> = {
 
 // Built-in destinations that don't appear in the connect grid.
 const CONNECTION_LABELS: Partial<Record<PlatformId, string>> = {
-  site: "This site",
+  site: "InkFeed",
 };
 
 export function ConnectionManager() {

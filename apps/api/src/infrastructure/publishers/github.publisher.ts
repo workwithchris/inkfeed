@@ -4,12 +4,12 @@ import type {
   PublishDraft,
   PublishResult,
   PublishPlatform,
-} from "../../domain/index";
+} from "../../domain/index.js";
 import {
   ensureGitHubRepo,
   GitHubPublishError,
   publishArticleToGitHub,
-} from "../github/github";
+} from "../github/github.js";
 
 function slugify(text: string): string {
   return (

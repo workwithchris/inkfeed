@@ -29,7 +29,7 @@ const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
   hashnode: "Hashnode",
   blogger: "Blogger",
-  site: "This site",
+  site: "InkFeed",
   webhook: "Webhook",
 };
 
@@ -272,7 +272,7 @@ export function ArticleDetail({ id }: { id: string }) {
                     target="_blank"
                     rel="noreferrer"
                     aria-disabled={!siteLive}
-                    title={siteLive ? undefined : "Publish to this site first"}
+                    title={siteLive ? undefined : "Publish to InkFeed first"}
                     onClick={(e) => {
                       if (!siteLive) e.preventDefault();
                     }}
@@ -288,7 +288,7 @@ export function ArticleDetail({ id }: { id: string }) {
                   <button
                     type="button"
                     disabled={!siteLive}
-                    title={siteLive ? undefined : "Publish to this site first"}
+                    title={siteLive ? undefined : "Publish to InkFeed first"}
                     onClick={() => {
                       const origin = window.location.origin;
                       const url = `${origin}/article/${article.slug ?? article.id}`;

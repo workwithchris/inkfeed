@@ -5,9 +5,9 @@ import type {
   PublishDraft,
   PublishResult,
   PublishPlatform,
-} from "../../domain/index";
-import { normalizeHttpUrl } from "../http/safe-url";
-import { PublishResponseError } from "./publish-response";
+} from "../../domain/index.js";
+import { normalizeHttpUrl } from "../http/safe-url.js";
+import { PublishResponseError } from "./publish-response.js";
 
 interface WebhookCredential {
   url: string;

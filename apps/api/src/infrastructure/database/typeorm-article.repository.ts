@@ -11,7 +11,7 @@ import type {
   Article,
   PublicFeedQuery,
   PublicFeedResult,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 @Injectable()
 export class TypeOrmArticleRepository implements ArticleRepository {

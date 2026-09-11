@@ -8,7 +8,7 @@ import {
 import type {
   ArticleRepository,
   UserRepository,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 // Unauthenticated public profile page data for a user, addressed by their
 // username (profile slug). Returns their info plus every article explicitly

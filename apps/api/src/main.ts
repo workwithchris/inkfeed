@@ -2,7 +2,7 @@ import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { json, urlencoded } from "express";
-import { AppModule } from "./app.module";
+import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
   // Documents are uploaded as base64 JSON, so raise the body limit.

@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Inject } from "@nestjs/common";
-import type { ArticleRepository } from "../../domain/index";
+import type { ArticleRepository } from "../../domain/index.js";
 
 // Unauthenticated global feed of every article published to the built-in site.
 @Controller("api/public/feed")

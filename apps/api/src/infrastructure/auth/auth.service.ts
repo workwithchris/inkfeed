@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { createClerkClient } from "@clerk/backend";
-import type { User, UserRepository } from "../../domain/index";
+import type { User, UserRepository } from "../../domain/index.js";
 
 @Injectable()
 export class AuthService {

@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnModuleDestroy, Inject } from "@nestjs/common";
 import { Worker, Job } from "bullmq";
-import IORedis from "ioredis";
-import { ProcessArticleUseCase } from "../../application/commands/process-article.command";
-import type { EventPublisher } from "../../domain/index";
+import { Redis } from "ioredis";
+import { ProcessArticleUseCase } from "../../application/commands/process-article.command.js";
+import type { EventPublisher } from "../../domain/index.js";
 
-const connection = new IORedis(
+const connection = new Redis(
   process.env.REDIS_URL || "redis://localhost:6379",
   { maxRetriesPerRequest: null },
 );

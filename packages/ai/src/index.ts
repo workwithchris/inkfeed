@@ -361,7 +361,9 @@ async function complete(
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens ?? 4096,
       },
-      { deadlineMs: 60_000 },
+      {
+        deadlineMs: Number(process.env.AI_DEADLINE_MS ?? 180_000),
+      },
     );
   } catch (err) {
     console.error("[ai-router] complete() failed:", err);

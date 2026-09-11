@@ -4,12 +4,12 @@ import type {
   PublishDraft,
   PublishResult,
   PublishPlatform,
-} from "../../domain/index";
+} from "../../domain/index.js";
 import {
   listBloggerBlogs,
   refreshGoogleAccessToken,
-} from "../oauth/google-blogger";
-import { markdownToHtml } from "../markdown/to-html";
+} from "../oauth/google-blogger.js";
+import { markdownToHtml } from "../markdown/to-html.js";
 
 const BLOGGER_API = "https://www.googleapis.com/blogger/v3";
 

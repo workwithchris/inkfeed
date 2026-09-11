@@ -3,7 +3,7 @@ import type {
   ConverterService,
   ExtractedContent,
   FeedListing,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 interface RawExtract {
   title: string;

@@ -4,11 +4,11 @@ import type {
   ArticleRepository,
   ConverterService,
   ExtractedContent,
-} from "../../domain/index";
+} from "../../domain/index.js";
 import type { AiTransformRequest } from "@repo/types";
 import { transformTranscript } from "@repo/ai";
-import { resolveYouTubeCover } from "../../infrastructure/media/youtube-cover";
-import { AiRouteResolver } from "../../infrastructure/ai/ai-route-resolver";
+import { resolveYouTubeCover } from "../../infrastructure/media/youtube-cover.js";
+import { AiRouteResolver } from "../../infrastructure/ai/ai-route-resolver.js";
 
 @Injectable()
 export class ProcessArticleUseCase {

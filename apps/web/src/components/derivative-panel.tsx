@@ -181,51 +181,66 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
                   )}
                 </span>
 
-                {derivative.status === "COMPLETED" && (
-                  <div className="flex items-center gap-1">
-                    {activeKind === "tweet_thread" && derivative.content && (
-                      <a
-                        href={tweetIntentUrl(firstTweet(derivative.content))}
-                        target="_blank"
-                        rel="noreferrer"
+                <div className="flex items-center gap-1">
+                  {derivative.status === "COMPLETED" && (
+                    <>
+                      {activeKind === "tweet_thread" && derivative.content && (
+                        <a
+                          href={tweetIntentUrl(firstTweet(derivative.content))}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-sm-ghost"
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                          </svg>
+                          Share to X
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => copy(derivative)}
                         className="btn-sm-ghost"
                       >
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                        </svg>
-                        Share to X
-                      </a>
-                    )}
+                        {copiedId === derivative.id ? "Copied" : "Copy"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          downloadFile(
+                            `${activeKind}-${derivative.id.slice(0, 8)}.md`,
+                            derivative.content ?? "",
+                          )
+                        }
+                        className="btn-sm-ghost"
+                      >
+                        Download
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(derivative.id);
+                          setDraft(derivative.content ?? "");
+                          setError("");
+                        }}
+                        className="btn-sm-ghost"
+                      >
+                        Edit
+                      </button>
+                    </>
+                  )}
+                  {derivative.status === "PENDING" ||
+                  derivative.status === "SYNTHESIZING" ? (
                     <button
                       type="button"
-                      onClick={() => copy(derivative)}
+                      onClick={() => removeMutation.mutate(derivative.id)}
+                      disabled={removeMutation.isPending}
+                      title="Stop generating and remove"
                       className="btn-sm-ghost"
                     >
-                      {copiedId === derivative.id ? "Copied" : "Copy"}
+                      Stop
                     </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        downloadFile(
-                          `${activeKind}-${derivative.id.slice(0, 8)}.md`,
-                          derivative.content ?? "",
-                        )
-                      }
-                      className="btn-sm-ghost"
-                    >
-                      Download
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(derivative.id);
-                        setDraft(derivative.content ?? "");
-                        setError("");
-                      }}
-                      className="btn-sm-ghost"
-                    >
-                      Edit
-                    </button>
+                  ) : (
                     <button
                       type="button"
                       onClick={() => removeMutation.mutate(derivative.id)}
@@ -234,8 +249,8 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
                     >
                       Delete
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {derivative.status === "FAILED" ? (

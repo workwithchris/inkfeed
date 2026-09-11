@@ -8,7 +8,7 @@ import type {
   Article,
   ArticleRepository,
   EditableContentData,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 @Injectable()
 export class UpdateArticleUseCase {

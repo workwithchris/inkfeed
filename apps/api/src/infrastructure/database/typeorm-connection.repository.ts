@@ -6,7 +6,7 @@ import type {
   Connection,
   ConnectionRepository,
   PublishPlatform,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 @Injectable()
 export class TypeOrmConnectionRepository implements ConnectionRepository {

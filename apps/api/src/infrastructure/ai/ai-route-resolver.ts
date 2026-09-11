@@ -1,7 +1,7 @@
 import { Injectable, Inject } from "@nestjs/common";
-import type { AiProvider, AiProviderRepository } from "../../domain/index";
+import type { AiProvider, AiProviderRepository } from "../../domain/index.js";
 import type { AiRoute } from "@repo/types";
-import { decryptSecret } from "../crypto/secret-box";
+import { decryptSecret } from "../crypto/secret-box.js";
 
 type StoredProvider = AiProvider & { apiKeyEnc: string };
 

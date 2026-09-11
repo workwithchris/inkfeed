@@ -1,11 +1,14 @@
 import { Injectable, Logger, OnModuleDestroy, Inject } from "@nestjs/common";
 import { Worker, Job } from "bullmq";
-import IORedis from "ioredis";
-import { GenerateDerivativeUseCase } from "../../application/commands/generate-derivative.command";
-import type { EventPublisher } from "../../domain/index";
+import { Redis } from "ioredis";
+import { GenerateDerivativeUseCase } from "../../application/commands/generate-derivative.command.js";
+import type {
+  DerivativeRepository,
+  EventPublisher,
+} from "../../domain/index.js";
 import type { DerivativeJobData } from "@repo/queue";
 
-const connection = new IORedis(
+const connection = new Redis(
   process.env.REDIS_URL || "redis://localhost:6379",
   { maxRetriesPerRequest: null },
 );
@@ -17,6 +20,8 @@ export class DerivativeWorker implements OnModuleDestroy {
 
   constructor(
     private readonly generateDerivative: GenerateDerivativeUseCase,
+    @Inject("DerivativeRepository")
+    private readonly derivatives: DerivativeRepository,
     @Inject("EventPublisher") private readonly events: EventPublisher,
   ) {
     this.worker = new Worker<DerivativeJobData>(
@@ -47,15 +52,26 @@ export class DerivativeWorker implements OnModuleDestroy {
 
     this.worker.on("failed", (job, err) => {
       this.logger.error(`Derivative job ${job?.id} failed: ${err.message}`);
-      if (job?.data) {
-        this.events.publishToUser(job.data.userId, {
-          type: "derivative-failed",
-          articleId: job.data.articleId,
-          derivativeId: job.data.derivativeId,
-          error: err.message,
-          timestamp: Date.now(),
-        });
+      if (!job?.data) return;
+
+      const attempts = job.opts.attempts ?? 1;
+      const exhausted =
+        job.attemptsMade >= attempts || /stalled/i.test(err.message);
+      if (exhausted) {
+        // A worker crash can leave the row stuck in SYNTHESIZING; make the
+        // terminal failure visible so the user can retry or delete it.
+        void this.derivatives
+          .updateStatus(job.data.derivativeId, "FAILED", err.message)
+          .catch(() => undefined);
       }
+
+      this.events.publishToUser(job.data.userId, {
+        type: "derivative-failed",
+        articleId: job.data.articleId,
+        derivativeId: job.data.derivativeId,
+        error: err.message,
+        timestamp: Date.now(),
+      });
     });
   }
 

@@ -2,7 +2,7 @@ import { Injectable, ConflictException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { UserEntity } from "@repo/database";
-import type { User, UserRepository } from "../../domain/index";
+import type { User, UserRepository } from "../../domain/index.js";
 
 @Injectable()
 export class TypeOrmUserRepository implements UserRepository {

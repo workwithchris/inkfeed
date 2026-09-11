@@ -9,15 +9,15 @@ import {
   Logger,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
-import type { ConnectionRepository } from "../../domain/index";
-import { BloggerPublisher } from "../../infrastructure/publishers/blogger.publisher";
-import { encryptSecret } from "../../infrastructure/crypto/secret-box";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
+import type { ConnectionRepository } from "../../domain/index.js";
+import { BloggerPublisher } from "../../infrastructure/publishers/blogger.publisher.js";
+import { encryptSecret } from "../../infrastructure/crypto/secret-box.js";
 import {
   buildGoogleAuthUrl,
   exchangeGoogleCode,
   verifyState,
-} from "../../infrastructure/oauth/google-blogger";
+} from "../../infrastructure/oauth/google-blogger.js";
 
 @Controller("api/connections/blogger")
 export class BloggerController {

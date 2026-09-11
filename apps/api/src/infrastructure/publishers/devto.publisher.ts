@@ -4,7 +4,7 @@ import type {
   PublishDraft,
   PublishResult,
   PublishPlatform,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 const API = "https://dev.to/api";
 

@@ -1,7 +1,7 @@
 import { Injectable, Inject, BadRequestException } from "@nestjs/common";
-import type { AiProvider, AiProviderRepository } from "../../domain/index";
-import type { CreateAiProviderDto } from "../dtos/provider.dto";
-import { encryptSecret } from "../../infrastructure/crypto/secret-box";
+import type { AiProvider, AiProviderRepository } from "../../domain/index.js";
+import type { CreateAiProviderDto } from "../dtos/provider.dto.js";
+import { encryptSecret } from "../../infrastructure/crypto/secret-box.js";
 
 @Injectable()
 export class CreateAiProviderUseCase {

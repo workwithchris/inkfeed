@@ -13,10 +13,10 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { CreateConnectionDto } from "../../application/dtos/connection.dto";
-import { ConnectPlatformUseCase } from "../../application/commands/connect-platform.command";
-import type { ConnectionRepository } from "../../domain/index";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+import { CreateConnectionDto } from "../../application/dtos/connection.dto.js";
+import { ConnectPlatformUseCase } from "../../application/commands/connect-platform.command.js";
+import type { ConnectionRepository } from "../../domain/index.js";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
 import type { Request } from "express";
 
 @Controller("api/connections")
@@ -45,7 +45,7 @@ export class ConnectionController {
 
   @Get()
   async list(@Req() req: Request & { userId: string }) {
-    // The built-in "this site" destination should always be available.
+    // The built-in InkFeed destination should always be available.
     await this.connectPlatform.ensureBuiltIn(req.userId);
     return this.connections.findByUserId(req.userId);
   }

@@ -6,7 +6,7 @@ import type {
   AiProvider,
   AiProviderId,
   AiProviderRepository,
-} from "../../domain/index";
+} from "../../domain/index.js";
 
 @Injectable()
 export class TypeOrmProviderRepository implements AiProviderRepository {

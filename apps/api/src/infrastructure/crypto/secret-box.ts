@@ -27,8 +27,14 @@ export function encryptSecret(plain: string): string {
 }
 
 export function decryptSecret(payload: string): string {
-  const [ivB64, tagB64, dataB64] = payload.split(".");
-  if (!ivB64 || !tagB64 || !dataB64) {
+  const parts = payload.split(".");
+  if (parts.length !== 3) {
+    throw new Error("Malformed encrypted secret");
+  }
+  // The ciphertext part may legitimately be empty when the plaintext is empty
+  // (e.g. the built-in "site" connection stores no credential).
+  const [ivB64, tagB64, dataB64] = parts;
+  if (!ivB64 || !tagB64) {
     throw new Error("Malformed encrypted secret");
   }
   const decipher = createDecipheriv(

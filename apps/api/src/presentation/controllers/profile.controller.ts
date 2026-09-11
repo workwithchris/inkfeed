@@ -9,8 +9,8 @@ import {
   ConflictException,
   BadRequestException,
 } from "@nestjs/common";
-import type { User, UserRepository } from "../../domain/index";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+import type { User, UserRepository } from "../../domain/index.js";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
 import type { Request } from "express";
 
 @Controller("api/profile")

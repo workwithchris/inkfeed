@@ -4,12 +4,12 @@ import type {
   PublishDraft,
   PublishResult,
   PublishPlatform,
-} from "../../domain/index";
+} from "../../domain/index.js";
 import {
   createLinkedInArticlePost,
   getLinkedInMember,
   uploadLinkedInImage,
-} from "../oauth/linkedin";
+} from "../oauth/linkedin.js";
 
 @Injectable()
 export class LinkedInPublisher implements BlogPublisher {

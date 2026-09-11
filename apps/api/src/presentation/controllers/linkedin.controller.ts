@@ -9,15 +9,15 @@ import {
   Logger,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
-import type { ConnectionRepository } from "../../domain/index";
-import { LinkedInPublisher } from "../../infrastructure/publishers/linkedin.publisher";
-import { encryptSecret } from "../../infrastructure/crypto/secret-box";
-import { signState, verifyState } from "../../infrastructure/oauth/google-blogger";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
+import type { ConnectionRepository } from "../../domain/index.js";
+import { LinkedInPublisher } from "../../infrastructure/publishers/linkedin.publisher.js";
+import { encryptSecret } from "../../infrastructure/crypto/secret-box.js";
+import { signState, verifyState } from "../../infrastructure/oauth/google-blogger.js";
 import {
   buildLinkedInAuthUrl,
   exchangeLinkedInCode,
-} from "../../infrastructure/oauth/linkedin";
+} from "../../infrastructure/oauth/linkedin.js";
 
 @Controller("api/connections/linkedin")
 export class LinkedInController {

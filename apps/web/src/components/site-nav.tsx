@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  SignedIn,
-  SignedOut,
+  useAuth,
   SignInButton,
   SignUpButton,
   UserButton,
@@ -19,6 +18,7 @@ const LINKS = [
 
 export function SiteNav() {
   const pathname = usePathname();
+  const { isLoaded, isSignedIn } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-md">
@@ -59,20 +59,27 @@ export function SiteNav() {
         {/* Account */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <SignedOut>
-            <SignInButton mode="modal">
-              <button className="btn-sm-ghost">Log in</button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="btn-sm-primary">Sign up</button>
-            </SignUpButton>
-          </SignedOut>
-          <SignedIn>
-            <Link href="/app" className="btn-sm-ghost hidden sm:inline-flex">
-              New article
-            </Link>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
+          {isLoaded &&
+            (isSignedIn ? (
+              <>
+                <Link
+                  href="/app"
+                  className="btn-sm-ghost hidden sm:inline-flex"
+                >
+                  New article
+                </Link>
+                <UserButton />
+              </>
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <button className="btn-sm-ghost">Log in</button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="btn-sm-primary">Sign up</button>
+                </SignUpButton>
+              </>
+            ))}
         </div>
       </nav>
     </header>

@@ -22,26 +22,26 @@ import {
   CreateArticleDto,
   CreateManualArticleDto,
   UploadArticleDto,
-} from "../../application/dtos/create-article.dto";
+} from "../../application/dtos/create-article.dto.js";
 import {
   UpdateArticleDto,
   PublishArticleDto,
-} from "../../application/dtos/connection.dto";
+} from "../../application/dtos/connection.dto.js";
 import {
   CreateDerivativeDto,
   UpdateDerivativeDto,
-} from "../../application/dtos/derivative.dto";
-import { GetArticleQuery, ListArticlesQuery } from "../../application/queries/get-article.query";
-import { UpdateArticleUseCase } from "../../application/commands/update-article.command";
+} from "../../application/dtos/derivative.dto.js";
+import { GetArticleQuery, ListArticlesQuery } from "../../application/queries/get-article.query.js";
+import { UpdateArticleUseCase } from "../../application/commands/update-article.command.js";
 import type {
   ArticleRepository,
   ConnectionRepository,
   ConverterService,
   DerivativeRepository,
   PublishRepository,
-} from "../../domain/index";
-import { SseService } from "../sse/sse.service";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+} from "../../domain/index.js";
+import { SseService } from "../sse/sse.service.js";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
 import { articleQueue, derivativeQueue, publishQueue } from "@repo/queue";
 import type { Request } from "express";
 
@@ -349,12 +349,18 @@ export class ArticleController {
       kind: dto.kind,
     });
 
-    await derivativeQueue.add("generate-derivative", {
-      derivativeId: derivative.id,
-      articleId: id,
-      userId: req.userId,
-      kind: dto.kind,
-    });
+    await derivativeQueue.add(
+      "generate-derivative",
+      {
+        derivativeId: derivative.id,
+        articleId: id,
+        userId: req.userId,
+        kind: dto.kind,
+      },
+      // Deterministic id so the job can be cancelled when the derivative is
+      // stopped/deleted.
+      { jobId: derivative.id },
+    );
 
     return { id: derivative.id, status: derivative.status };
   }
@@ -406,6 +412,15 @@ export class ArticleController {
       throw new NotFoundException(`Derivative ${derivativeId} not found`);
     }
     await this.derivativeRepo.delete(derivativeId);
+
+    // Stop a queued/retrying job. Active jobs can't be removed, but their
+    // writes become no-ops once the row is gone.
+    try {
+      const job = await derivativeQueue.getJob(derivativeId);
+      if (job) await job.remove();
+    } catch {
+      // Best-effort; ignore if the job is currently locked by a worker.
+    }
   }
 
   @Delete(":id")

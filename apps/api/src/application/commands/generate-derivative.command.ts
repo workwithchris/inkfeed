@@ -2,10 +2,10 @@ import { Injectable, Logger, Inject, NotFoundException } from "@nestjs/common";
 import type {
   ArticleRepository,
   DerivativeRepository,
-} from "../../domain/index";
+} from "../../domain/index.js";
 import type { AiTransformRequest } from "@repo/types";
 import { transformToFormat } from "@repo/ai";
-import { AiRouteResolver } from "../../infrastructure/ai/ai-route-resolver";
+import { AiRouteResolver } from "../../infrastructure/ai/ai-route-resolver.js";
 
 @Injectable()
 export class GenerateDerivativeUseCase {

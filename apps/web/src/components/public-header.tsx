@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { useAuth, UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "./theme-toggle";
 
 const LINKS = [
@@ -12,6 +12,7 @@ const LINKS = [
 
 export function PublicHeader() {
   const pathname = usePathname();
+  const { isLoaded, isSignedIn } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-md">
@@ -48,14 +49,14 @@ export function PublicHeader() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <SignedOut>
-            <Link href="/app" className="btn-sm-primary">
-              Start writing
-            </Link>
-          </SignedOut>
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
+          {isLoaded &&
+            (isSignedIn ? (
+              <UserButton />
+            ) : (
+              <Link href="/app" className="btn-sm-primary">
+                Start writing
+              </Link>
+            ))}
         </div>
       </nav>
     </header>

@@ -16,7 +16,7 @@ const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
   hashnode: "Hashnode",
   blogger: "Blogger",
-  site: "This site",
+  site: "InkFeed",
   webhook: "Webhook",
 };
 

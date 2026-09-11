@@ -1,7 +1,7 @@
 import { Controller, Get, Req, Inject, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
-import type { PublishRepository } from "../../domain/index";
-import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard";
+import type { PublishRepository } from "../../domain/index.js";
+import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
 
 @Controller("api/publications")
 @UseGuards(ClerkAuthGuard)
