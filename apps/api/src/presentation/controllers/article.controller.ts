@@ -279,24 +279,72 @@ export class ArticleController {
       throw new NotFoundException(`Connection ${dto.connectionId} not found`);
     }
 
+    const scheduledFor = dto.scheduledFor ? new Date(dto.scheduledFor) : null;
+    const scheduled =
+      scheduledFor !== null && scheduledFor.getTime() > Date.now();
+    if (scheduledFor && Number.isNaN(scheduledFor.getTime())) {
+      throw new BadRequestException("scheduledFor must be a valid date");
+    }
+
     const publication = await this.publishRepo.create({
       articleId: id,
       connectionId: dto.connectionId,
       userId: req.userId,
       platform: connection.platform,
+      scheduledFor: scheduled ? scheduledFor : null,
     });
 
-    await publishQueue.add("publish-article", {
-      publicationId: publication.id,
-      articleId: id,
-      connectionId: dto.connectionId,
-      userId: req.userId,
-      includeCoverImage: dto.includeCoverImage ?? true,
-      title: dto.title,
-      coverImageUrl: dto.coverImageUrl,
-    });
+    await publishQueue.add(
+      "publish-article",
+      {
+        publicationId: publication.id,
+        articleId: id,
+        connectionId: dto.connectionId,
+        userId: req.userId,
+        includeCoverImage: dto.includeCoverImage ?? true,
+        title: dto.title,
+        coverImageUrl: dto.coverImageUrl,
+      },
+      {
+        jobId: publication.id,
+        ...(scheduled ? { delay: scheduledFor!.getTime() - Date.now() } : {}),
+      },
+    );
 
     return { publicationId: publication.id, status: publication.status };
+  }
+
+  @Delete(":id/publications/:publicationId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async cancelScheduledPublish(
+    @Param("id") id: string,
+    @Param("publicationId") publicationId: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+
+    const publication = await this.publishRepo.findById(publicationId);
+    if (
+      !publication ||
+      publication.articleId !== id ||
+      publication.userId !== req.userId
+    ) {
+      throw new NotFoundException(`Publication ${publicationId} not found`);
+    }
+    if (publication.status !== "SCHEDULED" && publication.status !== "PENDING") {
+      throw new BadRequestException("This publication has already started");
+    }
+
+    try {
+      const job = await publishQueue.getJob(publicationId);
+      if (job) await job.remove();
+    } catch {
+      // Best-effort; a job already locked by a worker can't be removed.
+    }
+    await this.publishRepo.delete(publicationId);
   }
 
   @Delete(":id/site")

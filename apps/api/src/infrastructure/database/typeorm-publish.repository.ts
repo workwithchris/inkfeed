@@ -21,9 +21,15 @@ export class TypeOrmPublishRepository implements PublishRepository {
     connectionId: string;
     userId: string;
     platform: PublishPlatform;
+    scheduledFor?: Date | null;
   }): Promise<Publication> {
+    const scheduledFor = data.scheduledFor ?? null;
     const saved = await this.repo.save(
-      this.repo.create({ ...data, status: "PENDING" }),
+      this.repo.create({
+        ...data,
+        scheduledFor,
+        status: scheduledFor ? "SCHEDULED" : "PENDING",
+      }),
     );
     return this.toDomain(saved);
   }
@@ -80,6 +86,7 @@ export class TypeOrmPublishRepository implements PublishRepository {
       errorMessage: entity.errorMessage,
       responseStatus: entity.responseStatus,
       responseBody: entity.responseBody,
+      scheduledFor: entity.scheduledFor,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

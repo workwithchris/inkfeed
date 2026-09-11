@@ -18,6 +18,7 @@ export type PublishPlatform =
 
 export type PublishStatus =
   | "PENDING"
+  | "SCHEDULED"
   | "PUBLISHING"
   | "PUBLISHED"
   | "FAILED";
@@ -43,6 +44,11 @@ export class PublishEntity {
 
   @Column({ type: "varchar", default: "PENDING" })
   status!: PublishStatus;
+
+  // Set when the publication should go out at a future time. The queue job is
+  // enqueued with a matching delay.
+  @Column({ type: "timestamptz", nullable: true })
+  scheduledFor!: Date | null;
 
   @Column({ type: "varchar", nullable: true })
   externalId!: string | null;

@@ -8,6 +8,7 @@ import {
   listPublications,
   publishArticle,
   unpublishArticleSite,
+  cancelScheduledPublish,
   type ArticleResponse,
   type ConnectionResponse,
   type PublicationResponse,
@@ -26,6 +27,7 @@ const IMAGE_MODES: { id: ImageMode; label: string }[] = [
 
 const STATUS_DOT: Record<string, string> = {
   PENDING: "bg-faint",
+  SCHEDULED: "bg-link",
   PUBLISHING: "bg-link",
   PUBLISHED: "bg-ink",
   FAILED: "bg-error",
@@ -51,14 +53,22 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
     article.coverImageUrl ? "keep" : "none",
   );
   const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [scheduleAt, setScheduleAt] = useState("");
 
   const replaceInvalid = imageMode === "replace" && !coverImageUrl.trim();
+
+  // Any chosen time schedules the publish; the API treats a past time as
+  // "send now".
+  const schedulesFuture = !!scheduleAt;
 
   const publishOptions = (): PublishOptions => ({
     includeCoverImage: imageMode !== "none",
     title: title.trim() || undefined,
     coverImageUrl:
       imageMode === "replace" ? coverImageUrl.trim() : undefined,
+    scheduledFor: schedulesFuture
+      ? new Date(scheduleAt).toISOString()
+      : undefined,
   });
 
   const imagePreview =
@@ -135,6 +145,16 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
 
   const unpublishMutation = useMutation({
     mutationFn: () => unpublishArticleSite(articleId),
+    onSuccess: () => {
+      setError("");
+      invalidate();
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (publicationId: string) =>
+      cancelScheduledPublish(articleId, publicationId),
     onSuccess: () => {
       setError("");
       invalidate();
@@ -299,6 +319,20 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
                 />
               )}
             </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-body-sm text-mute">
+                Schedule for later{" "}
+                <span className="text-faint">(optional)</span>
+              </span>
+              <input
+                type="datetime-local"
+                value={scheduleAt}
+                onChange={(e) => setScheduleAt(e.target.value)}
+                disabled={inFlight}
+                className="input-default"
+              />
+            </label>
           </div>
 
           {selectedIsSite && sitePublished ? (
@@ -324,9 +358,11 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
             >
               {inFlight
                 ? "Publishing…"
-                : selectedIsSite
-                  ? `Publish to ${SITE_PLATFORM_LABEL}`
-                  : "Publish as draft"}
+                : schedulesFuture
+                  ? "Schedule"
+                  : selectedIsSite
+                    ? `Publish to ${SITE_PLATFORM_LABEL}`
+                    : "Publish as draft"}
             </button>
           )}
 
@@ -386,6 +422,21 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
                     />
                     {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
                   </span>
+                  {p.status === "SCHEDULED" && p.scheduledFor && (
+                    <span className="font-mono text-[11px] text-link">
+                      {new Date(p.scheduledFor).toLocaleString()}
+                    </span>
+                  )}
+                  {p.status === "SCHEDULED" && (
+                    <button
+                      type="button"
+                      onClick={() => cancelMutation.mutate(p.id)}
+                      disabled={cancelMutation.isPending}
+                      className="text-faint transition-colors hover:text-error"
+                    >
+                      Cancel
+                    </button>
+                  )}
                   {p.externalUrl && (
                     <a
                       href={p.externalUrl}

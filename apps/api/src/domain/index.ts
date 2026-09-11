@@ -157,6 +157,7 @@ export interface Publication {
   errorMessage: string | null;
   responseStatus: number | null;
   responseBody: string | null;
+  scheduledFor: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -180,6 +181,7 @@ export interface PublishRepository {
     connectionId: string;
     userId: string;
     platform: PublishPlatform;
+    scheduledFor?: Date | null;
   }): Promise<Publication>;
   findById(id: string): Promise<Publication | null>;
   findByArticleId(articleId: string): Promise<Publication[]>;

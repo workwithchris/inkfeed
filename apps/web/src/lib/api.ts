@@ -116,6 +116,7 @@ export interface PublicationResponse {
   errorMessage: string | null;
   responseStatus: number | null;
   responseBody: string | null;
+  scheduledFor: string | null;
   createdAt: string;
 }
 
@@ -397,6 +398,8 @@ export interface PublishOptions {
   includeCoverImage?: boolean;
   title?: string;
   coverImageUrl?: string;
+  /** ISO timestamp; future values schedule the publish. */
+  scheduledFor?: string;
 }
 
 export async function publishArticle(
@@ -422,6 +425,16 @@ export async function listAllPublications(): Promise<PublicationResponse[]> {
 
 export async function unpublishArticleSite(articleId: string): Promise<void> {
   await apiFetch(`/api/articles/${articleId}/site`, { method: "DELETE" });
+}
+
+export async function cancelScheduledPublish(
+  articleId: string,
+  publicationId: string,
+): Promise<void> {
+  await apiFetch(
+    `/api/articles/${articleId}/publications/${publicationId}`,
+    { method: "DELETE" },
+  );
 }
 
 // ─── Repurposing (derivatives) ────────────────────────────

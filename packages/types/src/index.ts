@@ -125,7 +125,12 @@ export type PublishPlatform =
   | "site"
   | "webhook";
 
-export type PublishStatus = "PENDING" | "PUBLISHING" | "PUBLISHED" | "FAILED";
+export type PublishStatus =
+  | "PENDING"
+  | "SCHEDULED"
+  | "PUBLISHING"
+  | "PUBLISHED"
+  | "FAILED";
 
 export interface Connection {
   id: string;
@@ -149,6 +154,7 @@ export interface Publication {
   errorMessage: string | null;
   responseStatus: number | null;
   responseBody: string | null;
+  scheduledFor: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -167,6 +173,8 @@ export interface UpdateArticleDto {
 export interface PublishArticleDto {
   connectionId: string;
   includeCoverImage?: boolean;
+  /** ISO timestamp. When set in the future, the publish is scheduled. */
+  scheduledFor?: string;
 }
 
 // ─── SSE Events (publishing) ──────────────────────────────
