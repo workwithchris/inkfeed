@@ -77,6 +77,10 @@ export class ArticleEntity {
   @Column({ type: "text", nullable: true })
   coverImageUrl!: string | null;
 
+  // Public page views. Incremented when a published article is read.
+  @Column({ type: "int", default: 0 })
+  viewCount!: number;
+
   @Column({ type: "varchar", default: "PENDING" })
   status!: JobStatus;
 

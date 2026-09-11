@@ -52,6 +52,7 @@ export interface ArticleResponse {
   tags: string[] | null;
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
+  viewCount: number;
   status: string;
   durationSeconds: number | null;
   channel: string | null;

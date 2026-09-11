@@ -42,6 +42,7 @@ export interface Article {
   tags: string[] | null;
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
+  viewCount: number;
   status: JobStatus;
   transcript: string | null;
   durationSeconds: number | null;
@@ -76,6 +77,7 @@ export interface ArticleResponseDto {
   tags: string[] | null;
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
+  viewCount: number;
   status: JobStatus;
   durationSeconds: number | null;
   channel: string | null;

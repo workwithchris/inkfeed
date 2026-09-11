@@ -172,6 +172,10 @@ export class TypeOrmArticleRepository implements ArticleRepository {
     await this.repo.delete(id);
   }
 
+  async incrementView(id: string): Promise<void> {
+    await this.repo.increment({ id }, "viewCount", 1);
+  }
+
   private toDomain(entity: ArticleEntity): Article {
     return {
       id: entity.id,
@@ -191,6 +195,7 @@ export class TypeOrmArticleRepository implements ArticleRepository {
       tags: entity.tags,
       readingTimeMinutes: entity.readingTimeMinutes,
       coverImageUrl: entity.coverImageUrl,
+      viewCount: entity.viewCount,
       status: entity.status,
       transcript: entity.transcript,
       durationSeconds: entity.durationSeconds,

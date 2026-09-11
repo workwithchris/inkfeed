@@ -47,6 +47,9 @@ export class PublicArticleController {
 
     const author = await this.users.findById(article.userId);
 
+    // Best-effort view counter; never block the read on it.
+    void this.articles.incrementView(article.id).catch(() => undefined);
+
     return {
       id: article.id,
       title: article.title,

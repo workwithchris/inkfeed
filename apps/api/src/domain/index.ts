@@ -40,6 +40,7 @@ export interface Article {
   tags: string[] | null;
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
+  viewCount: number;
   status: JobStatus;
   transcript: string | null;
   durationSeconds: number | null;
@@ -79,6 +80,7 @@ export interface ArticleRepository {
   markFailed(id: string, error: string): Promise<void>;
   markCompleted(id: string): Promise<void>;
   updateEditable(id: string, data: EditableContentData): Promise<void>;
+  incrementView(id: string): Promise<void>;
   delete(id: string): Promise<void>;
 }
 

@@ -167,8 +167,33 @@ export function ArticleList() {
 
   if (isLoading || !articles?.length) return null;
 
+  const totalViews = articles.reduce((sum, a) => sum + (a.viewCount ?? 0), 0);
+  const totalPublished = (allPublications ?? []).filter(
+    (p) => p.status === "PUBLISHED",
+  ).length;
+
+  const stats = [
+    { label: "Articles", value: articles.length },
+    { label: "Views", value: totalViews },
+    { label: "Published", value: totalPublished },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-3 gap-3">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-lg border border-hairline bg-elevated px-4 py-3"
+          >
+            <p className="eyebrow">{s.label}</p>
+            <p className="mt-1 font-mono text-h3 text-ink">
+              {s.value.toLocaleString()}
+            </p>
+          </div>
+        ))}
+      </div>
+
       <div className="flex items-center justify-between">
         <p className="eyebrow">Library</p>
         <span className="font-mono text-eyebrow text-faint">
@@ -225,6 +250,15 @@ export function ArticleList() {
                         </span>
                       </>
                     ) : null}
+                    {article.viewCount > 0 && (
+                      <>
+                        <span>·</span>
+                        <span className="shrink-0">
+                          {article.viewCount.toLocaleString()}{" "}
+                          {article.viewCount === 1 ? "view" : "views"}
+                        </span>
+                      </>
+                    )}
                     <span>·</span>
                     <span className="shrink-0">
                       {new Date(article.createdAt).toLocaleDateString()}
