@@ -10,13 +10,14 @@ import {
   type PublicationResponse,
   type SourceType,
 } from "@/lib/api";
+import { SITE_PLATFORM_LABEL } from "@repo/types";
 import { PlatformIcon } from "./platform-icon";
 
 const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
   hashnode: "Hashnode",
   blogger: "Blogger",
-  site: "InkFeed",
+  site: SITE_PLATFORM_LABEL,
   webhook: "Webhook",
 };
 

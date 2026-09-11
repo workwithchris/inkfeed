@@ -13,6 +13,7 @@ import {
   type PublicationResponse,
   type PublishOptions,
 } from "@/lib/api";
+import { SITE_PLATFORM_LABEL } from "@repo/types";
 import { PlatformIcon } from "./platform-icon";
 
 type ImageMode = "keep" | "replace" | "none";
@@ -35,7 +36,7 @@ function platformLabel(platform: PublicationResponse["platform"]): string {
   if (platform === "hashnode") return "Hashnode";
   if (platform === "linkedin") return "LinkedIn";
   if (platform === "github") return "GitHub";
-  if (platform === "site") return "InkFeed";
+  if (platform === "site") return SITE_PLATFORM_LABEL;
   if (platform === "webhook") return "Webhook";
   return "Blogger";
 }
@@ -308,7 +309,7 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
             >
               {unpublishMutation.isPending
                 ? "Unpublishing…"
-                : "Unpublish from InkFeed"}
+                : `Unpublish from ${SITE_PLATFORM_LABEL}`}
             </button>
           ) : (
             <button
@@ -324,7 +325,7 @@ export function PublishDialog({ article }: { article: ArticleResponse }) {
               {inFlight
                 ? "Publishing…"
                 : selectedIsSite
-                  ? "Publish to InkFeed"
+                  ? `Publish to ${SITE_PLATFORM_LABEL}`
                   : "Publish as draft"}
             </button>
           )}

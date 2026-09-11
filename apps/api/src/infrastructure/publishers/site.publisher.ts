@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { SITE_PLATFORM_LABEL } from "@repo/types";
 import type {
   BlogPublisher,
   PublishDraft,
@@ -19,7 +20,7 @@ export class SitePublisher implements BlogPublisher {
     blogId: string | null;
     blogName: string | null;
   }> {
-    return { blogId: null, blogName: "InkFeed" };
+    return { blogId: null, blogName: SITE_PLATFORM_LABEL };
   }
 
   async publish(

@@ -10,6 +10,7 @@ import {
   getLinkedInAuthUrl,
   type ConnectionResponse,
 } from "@/lib/api";
+import { SITE_PLATFORM_LABEL } from "@repo/types";
 import { PlatformIcon } from "./platform-icon";
 
 type PlatformId = ConnectionResponse["platform"];
@@ -59,7 +60,7 @@ const HINTS: Partial<Record<PlatformId, string>> = {
 
 // Built-in destinations that don't appear in the connect grid.
 const CONNECTION_LABELS: Partial<Record<PlatformId, string>> = {
-  site: "InkFeed",
+  site: SITE_PLATFORM_LABEL,
 };
 
 export function ConnectionManager() {

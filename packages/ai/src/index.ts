@@ -362,7 +362,7 @@ async function complete(
         max_tokens: options.maxTokens ?? 4096,
       },
       {
-        deadlineMs: Number(process.env.AI_DEADLINE_MS ?? 180_000),
+        deadlineMs: Number(process.env.AI_DEADLINE_MS) || 180_000,
       },
     );
   } catch (err) {

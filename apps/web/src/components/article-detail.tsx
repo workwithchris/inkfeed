@@ -17,6 +17,7 @@ import {
   type PublicationResponse,
   type UpdateArticleInput,
 } from "@/lib/api";
+import { SITE_PLATFORM_LABEL } from "@repo/types";
 import { stripTldr } from "@/lib/content";
 import { tweetIntentUrl } from "@/lib/share";
 import { SeoPanel } from "./seo-panel";
@@ -29,7 +30,7 @@ const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
   hashnode: "Hashnode",
   blogger: "Blogger",
-  site: "InkFeed",
+  site: SITE_PLATFORM_LABEL,
   webhook: "Webhook",
 };
 
@@ -272,7 +273,7 @@ export function ArticleDetail({ id }: { id: string }) {
                     target="_blank"
                     rel="noreferrer"
                     aria-disabled={!siteLive}
-                    title={siteLive ? undefined : "Publish to InkFeed first"}
+                    title={siteLive ? undefined : `Publish to ${SITE_PLATFORM_LABEL} first`}
                     onClick={(e) => {
                       if (!siteLive) e.preventDefault();
                     }}
@@ -288,7 +289,7 @@ export function ArticleDetail({ id }: { id: string }) {
                   <button
                     type="button"
                     disabled={!siteLive}
-                    title={siteLive ? undefined : "Publish to InkFeed first"}
+                    title={siteLive ? undefined : `Publish to ${SITE_PLATFORM_LABEL} first`}
                     onClick={() => {
                       const origin = window.location.origin;
                       const url = `${origin}/article/${article.slug ?? article.id}`;

@@ -1,4 +1,5 @@
 import { Injectable, Inject, BadRequestException, Logger } from "@nestjs/common";
+import { SITE_PLATFORM_LABEL } from "@repo/types";
 import type {
   Connection,
   ConnectionRepository,
@@ -59,7 +60,7 @@ export class ConnectPlatformUseCase {
       platform: "site",
       credentialEnc: encryptSecret(""),
       blogId: null,
-      blogName: "InkFeed",
+      blogName: SITE_PLATFORM_LABEL,
     });
   }
 }

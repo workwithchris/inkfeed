@@ -111,6 +111,9 @@ export interface JobFailedEvent {
 export type SseEvent = JobProgressEvent | JobCompletedEvent | JobFailedEvent;
 
 // ─── Publishing ───────────────────────────────────────────
+// Display name for the built-in "site" destination (this app).
+export const SITE_PLATFORM_LABEL = "InkFeed";
+
 export type PublishPlatform =
   | "devto"
   | "hashnode"
