@@ -280,14 +280,14 @@ export function UrlInput() {
                 Drop a file or click to browse
               </span>
               <span className="text-body-sm text-faint">
-                PDF, DOCX, TXT, MD, PPTX, XLSX
+                PDF, DOCX, PPTX, XLSX, XLS, EPUB, IPYNB, ZIP, MSG + more
               </span>
             </>
           )}
           <input
             ref={fileRef}
             type="file"
-            accept=".pdf,.docx,.doc,.txt,.md,.pptx,.xlsx,.csv,.html,.htm"
+            accept=".pdf,.docx,.txt,.md,.pptx,.xlsx,.xls,.csv,.html,.htm,.epub,.ipynb,.zip,.msg"
             onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
             disabled={busy}
             className="hidden"

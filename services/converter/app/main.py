@@ -82,34 +82,59 @@ def html_to_markdown(raw_html: str) -> str:
         return html.unescape(re.sub(r"<[^>]+>", " ", raw_html))
 
 
+def parse_duration(value: str | None) -> int | None:
+    """Parse an ISO-8601 duration (PT4M13S) or a clock duration (4:13 / 1:04:13)."""
+    if not value:
+        return None
+    value = value.strip()
+    iso = re.fullmatch(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", value)
+    if iso:
+        hours, minutes, seconds = (int(part or 0) for part in iso.groups())
+        return hours * 3600 + minutes * 60 + seconds
+    parts = value.split(":")
+    if 1 < len(parts) <= 3 and all(part.isdigit() for part in parts):
+        total = 0
+        for part in parts:
+            total = total * 60 + int(part)
+        return total
+    return None
+
+
 def extract_youtube(url_str: str) -> ExtractResponse:
+    video_id = extract_video_id(url_str)
+    # MarkItDown only routes canonical watch URLs to its YouTube converter.
+    if video_id:
+        url_str = f"https://www.youtube.com/watch?v={video_id}"
+
     md = MarkItDown()
     result = md.convert(url_str)
     text_content = result.text_content or ""
 
-    title = first_title(text_content, "Untitled Video")
+    # MarkItDown sets a structured title; fall back to the first heading.
+    title = (getattr(result, "title", None) or "").strip()
+    if not title or title.lower() == "youtube":
+        heading = re.search(r"^##\s+(.+)$", text_content, re.MULTILINE)
+        title = (
+            heading.group(1).strip()
+            if heading
+            else first_title(text_content, "Untitled Video")
+        )
 
-    transcript_start = text_content.find("Transcript:")
-    transcript = (
-        text_content[transcript_start:].strip()
-        if transcript_start != -1
-        else text_content
+    # Transcript is everything after the "### Transcript" heading.
+    transcript = text_content.strip()
+    transcript_match = re.search(
+        r"^#{2,3}\s*Transcript\s*$", text_content, re.MULTILINE
     )
+    if transcript_match:
+        transcript = text_content[transcript_match.end():].strip()
 
     channel_match = re.search(r"\*\*Channel:\*\*\s*(.+)", text_content)
     channel = channel_match.group(1).strip() if channel_match else None
 
-    duration_match = re.search(r"\*\*Duration:\*\*\s*(.+)", text_content)
-    duration_str = duration_match.group(1).strip() if duration_match else None
-    duration_seconds = None
-    if duration_str:
-        parts = duration_str.split(":")
-        if len(parts) == 3:
-            duration_seconds = (
-                int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-            )
-        elif len(parts) == 2:
-            duration_seconds = int(parts[0]) * 60 + int(parts[1])
+    duration_match = re.search(
+        r"\*\*(?:Runtime|Duration):\*\*\s*([^\s]+)", text_content
+    )
+    duration_seconds = parse_duration(duration_match.group(1) if duration_match else None)
 
     return ExtractResponse(
         title=title,
