@@ -408,12 +408,12 @@ export function UrlInput() {
                   aria-checked={active}
                   onClick={() => setSelectedIndex(i)}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors ${
-                    active ? "bg-ink text-white" : "hover:bg-elevated"
+                    active ? "bg-hairline-soft text-ink" : "text-body hover:bg-hairline-soft hover:text-ink"
                   }`}
                 >
                   <span
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                      active ? "border-white bg-white text-ink" : "border-hairline"
+                      active ? "border-ink bg-ink text-on-ink" : "border-hairline"
                     }`}
                   >
                     {active && (
@@ -429,7 +429,7 @@ export function UrlInput() {
                     {item.publishedAt && (
                       <span
                         className={`block truncate text-body-sm ${
-                          active ? "text-white/70" : "text-faint"
+                          active ? "text-mute" : "text-faint"
                         }`}
                       >
                         {new Date(item.publishedAt).toLocaleDateString()}

@@ -75,28 +75,30 @@
     @apply font-mono text-eyebrow uppercase tracking-[0.08em] text-mute;
   }
 
-  /* ─── Buttons ────────────────────────────────────────── */
+  /* ─── Buttons ──────────────────────────────────────────
+     One size/shape for every button: h-9, rounded-pill, 14px label.
+     Variants differ by color only. */
   .btn-primary {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill
-           bg-ink px-[14px] text-button-lg text-on-ink transition-colors
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-pill
+           bg-ink px-4 text-button-md text-on-ink transition-colors
            hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-secondary {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill
-           border border-hairline bg-elevated px-[14px] text-button-lg text-ink
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-pill
+           border border-hairline bg-elevated px-4 text-button-md text-ink
            transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-sm-primary {
-    @apply inline-flex h-9 items-center justify-center gap-2 rounded-pill bg-ink px-3.5
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-pill bg-ink px-4
            text-button-md text-on-ink transition-colors hover:bg-ink/90
            disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-sm-ghost {
     @apply inline-flex h-9 items-center justify-center gap-2 rounded-pill border border-hairline
-           bg-elevated px-3.5 text-button-md text-ink transition-colors hover:bg-canvas
+           bg-elevated px-4 text-button-md text-ink transition-colors hover:bg-canvas
            disabled:cursor-not-allowed disabled:opacity-40;
   }
 
