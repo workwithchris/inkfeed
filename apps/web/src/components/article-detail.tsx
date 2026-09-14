@@ -25,6 +25,7 @@ import { PublishDialog } from "./publish-dialog";
 import { PlatformIcon } from "./platform-icon";
 import { ArticleEditor } from "./article-editor";
 import { DerivativePanel } from "./derivative-panel";
+import { VideoPanel } from "./video-panel";
 
 const PLATFORM_NAME: Record<string, string> = {
   devto: "Dev.to",
@@ -62,7 +63,11 @@ export function ArticleDetail({ id }: { id: string }) {
     queryKey: ["article", id],
     queryFn: () => getArticle(id),
     refetchInterval: (query) => {
-      const s = (query.state.data as ArticleResponse | undefined)?.status;
+      const data = query.state.data as ArticleResponse | undefined;
+      const s = data?.status;
+      const videoBusy =
+        data?.videoStatus === "PENDING" || data?.videoStatus === "RENDERING";
+      if (videoBusy) return 4000;
       return s === "COMPLETED" || s === "FAILED" ? false : 4000;
     },
   });
@@ -411,6 +416,8 @@ export function ArticleDetail({ id }: { id: string }) {
                   {stripTldr(article.content)}
                 </ReactMarkdown>
               </article>
+
+              <VideoPanel article={article} />
 
               <DerivativePanel articleId={article.id} />
 

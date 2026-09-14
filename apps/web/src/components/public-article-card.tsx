@@ -45,7 +45,11 @@ export function PublicArticleCard({
   author,
 }: {
   article: PublicArticleCardData;
-  author?: { username: string | null; name: string | null } | null;
+  author?: {
+    username: string | null;
+    name: string | null;
+    imageUrl?: string | null;
+  } | null;
 }) {
   const href = article.slug
     ? `/article/${article.slug}`
@@ -87,9 +91,17 @@ export function PublicArticleCard({
 
       {hasAuthor && (
         <div className="mt-4 flex items-center gap-2 text-body-sm text-mute">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[10px] font-medium text-white">
-            {initials(author?.name || author?.username || "?")}
-          </span>
+          {author?.imageUrl ? (
+            <img
+              src={author.imageUrl}
+              alt=""
+              className="h-6 w-6 rounded-full border border-hairline object-cover"
+            />
+          ) : (
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[10px] font-medium text-white">
+              {initials(author?.name || author?.username || "?")}
+            </span>
+          )}
           {author?.username ? (
             <a
               href={authorUrl(author.username)}

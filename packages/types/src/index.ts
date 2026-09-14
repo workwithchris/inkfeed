@@ -43,6 +43,8 @@ export interface Article {
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
   viewCount: number;
+  videoUrl: string | null;
+  videoStatus: "PENDING" | "RENDERING" | "READY" | "FAILED" | null;
   status: JobStatus;
   transcript: string | null;
   durationSeconds: number | null;
@@ -78,6 +80,8 @@ export interface ArticleResponseDto {
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
   viewCount: number;
+  videoUrl: string | null;
+  videoStatus: "PENDING" | "RENDERING" | "READY" | "FAILED" | null;
   status: JobStatus;
   durationSeconds: number | null;
   channel: string | null;

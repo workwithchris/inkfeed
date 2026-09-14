@@ -31,20 +31,23 @@ export class PublicFeedController {
       total,
       limit: take,
       offset: skip,
-      items: items.map(({ article, authorUsername, authorName }) => ({
-        id: article.id,
-        title: article.title,
-        slug: article.slug,
-        summary: article.summary,
-        coverImageUrl: article.coverImageUrl,
-        tags: article.tags,
-        readingTimeMinutes: article.readingTimeMinutes,
-        channel: article.channel,
-        sourceType: article.sourceType,
-        createdAt: article.createdAt,
-        authorUsername,
-        authorName,
-      })),
+      items: items.map(
+        ({ article, authorUsername, authorName, authorImageUrl }) => ({
+          id: article.id,
+          title: article.title,
+          slug: article.slug,
+          summary: article.summary,
+          coverImageUrl: article.coverImageUrl,
+          tags: article.tags,
+          readingTimeMinutes: article.readingTimeMinutes,
+          channel: article.channel,
+          sourceType: article.sourceType,
+          createdAt: article.createdAt,
+          authorUsername,
+          authorName,
+          authorImageUrl,
+        }),
+      ),
     };
   }
 }

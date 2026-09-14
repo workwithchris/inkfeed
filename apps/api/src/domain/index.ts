@@ -41,6 +41,9 @@ export interface Article {
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
   viewCount: number;
+  videoUrl: string | null;
+  videoStatus: VideoStatus | null;
+  videoError: string | null;
   status: JobStatus;
   transcript: string | null;
   durationSeconds: number | null;
@@ -59,6 +62,8 @@ export type JobStatus =
   | "SYNTHESIZING"
   | "COMPLETED"
   | "FAILED";
+
+export type VideoStatus = "PENDING" | "RENDERING" | "READY" | "FAILED";
 
 // ─── Value Objects ────────────────────────────────────────
 export interface YouTubeUrl {
@@ -80,6 +85,15 @@ export interface ArticleRepository {
   markFailed(id: string, error: string): Promise<void>;
   markCompleted(id: string): Promise<void>;
   updateEditable(id: string, data: EditableContentData): Promise<void>;
+  updateVideo(
+    id: string,
+    data: {
+      status: VideoStatus;
+      videoUrl?: string | null;
+      error?: string | null;
+    },
+  ): Promise<void>;
+  clearVideo(id: string): Promise<void>;
   incrementView(id: string): Promise<void>;
   delete(id: string): Promise<void>;
 }
@@ -94,6 +108,7 @@ export interface PublicFeedEntry {
   article: Article;
   authorUsername: string | null;
   authorName: string | null;
+  authorImageUrl: string | null;
 }
 
 export interface PublicFeedResult {
@@ -120,6 +135,7 @@ export interface User {
   email: string;
   username: string | null;
   name: string | null;
+  imageUrl: string | null;
 }
 
 export interface UserRepository {
@@ -130,8 +146,10 @@ export interface UserRepository {
     clerkUserId: string;
     email: string;
     name: string | null;
+    imageUrl?: string | null;
   }): Promise<User>;
   updateUsername(userId: string, username: string): Promise<User>;
+  updateImage(userId: string, imageUrl: string): Promise<User>;
 }
 
 // ─── Publishing ───────────────────────────────────────────
@@ -328,6 +346,30 @@ export interface ConverterService {
   }): Promise<ExtractedContent>;
   listFeedItems(url: string): Promise<FeedListing>;
   listPlaylistItems(url: string): Promise<PlaylistListing>;
+  renderVideo(input: {
+    title: string;
+    scenes: { text: string; narration?: string }[];
+    author: string | null;
+    subtitle: string | null;
+    coverUrl: string | null;
+    imageUrls?: string[];
+    aspect?: "9:16" | "1:1" | "16:9";
+    theme?: "ink" | "slate" | "noir" | "light";
+    quality?: "preview" | "final";
+    voice?: string | null;
+    voiceRate?: number;
+    voicePitch?: number;
+    kenBurns?: boolean;
+    transition?: "none" | "fade";
+    musicUrl?: string | null;
+    musicVolume?: number;
+    font?: "sans" | "serif" | "mono";
+    textColor?: string | null;
+    textPosition?: "top" | "center" | "bottom";
+    uppercase?: boolean;
+    watermark?: boolean;
+    watermarkText?: string | null;
+  }): Promise<Buffer>;
 }
 
 export interface ArticlePublisher {

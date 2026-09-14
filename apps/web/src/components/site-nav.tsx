@@ -12,6 +12,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 const LINKS = [
   { href: "/app", label: "Convert" },
+  { href: "/explore", label: "Explore" },
   { href: "/settings", label: "Settings" },
   { href: "/pricing", label: "Pricing" },
 ];

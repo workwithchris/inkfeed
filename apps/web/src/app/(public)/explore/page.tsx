@@ -73,7 +73,11 @@ export default async function ExplorePage({
             <PublicArticleCard
               key={item.id}
               article={item}
-              author={{ username: item.authorUsername, name: item.authorName }}
+              author={{
+                username: item.authorUsername,
+                name: item.authorName,
+                imageUrl: item.authorImageUrl,
+              }}
             />
           ))}
         </div>

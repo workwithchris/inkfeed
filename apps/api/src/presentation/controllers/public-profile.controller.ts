@@ -35,6 +35,7 @@ export class PublicProfileController {
         id: user.id,
         username: user.username,
         name: user.name,
+        imageUrl: user.imageUrl,
         bio: null,
       },
       articles: published.map((a) => ({

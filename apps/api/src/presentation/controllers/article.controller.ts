@@ -33,8 +33,10 @@ import {
   CreateDerivativeDto,
   UpdateDerivativeDto,
 } from "../../application/dtos/derivative.dto.js";
+import { GenerateVideoDto } from "../../application/dtos/video.dto.js";
 import { GetArticleQuery, ListArticlesQuery } from "../../application/queries/get-article.query.js";
 import { UpdateArticleUseCase } from "../../application/commands/update-article.command.js";
+import { GenerateVideoUseCase } from "../../application/commands/generate-video.command.js";
 import type {
   ArticleRepository,
   ConnectionRepository,
@@ -44,8 +46,20 @@ import type {
 } from "../../domain/index.js";
 import { SseService } from "../sse/sse.service.js";
 import { ClerkAuthGuard } from "../../infrastructure/auth/clerk-auth.guard.js";
-import { articleQueue, derivativeQueue, publishQueue } from "@repo/queue";
+import {
+  articleQueue,
+  derivativeQueue,
+  publishQueue,
+  videoQueue,
+} from "@repo/queue";
+import { unlink } from "fs/promises";
+import { join } from "path";
 import type { Request } from "express";
+
+function videoFilePath(articleId: string): string {
+  const root = process.env.UPLOAD_DIR || join(process.cwd(), "uploads");
+  return join(root, "videos", `${articleId}.mp4`);
+}
 
 async function fetchYouTubeMetadata(
   url: string,
@@ -73,6 +87,7 @@ export class ArticleController {
     private readonly getArticleQuery: GetArticleQuery,
     private readonly listArticlesQuery: ListArticlesQuery,
     private readonly updateArticle: UpdateArticleUseCase,
+    private readonly generateVideoUseCase: GenerateVideoUseCase,
     @Inject("ArticleRepository") private readonly articleRepo: ArticleRepository,
     @Inject("ConnectionRepository")
     private readonly connectionRepo: ConnectionRepository,
@@ -439,6 +454,89 @@ export class ArticleController {
       throw new NotFoundException(`Article ${id} not found`);
     }
     return this.publishRepo.findByArticleId(id);
+  }
+
+  // ─── Short video ───────────────────────────────────────
+  @Post(":id/video/script")
+  @HttpCode(HttpStatus.OK)
+  async previewVideoScript(
+    @Param("id") id: string,
+    @Body() dto: GenerateVideoDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+
+    const scenes = await this.generateVideoUseCase.preview(id, {
+      scriptSource: dto.scriptSource ?? "auto",
+      customScript: dto.customScript || null,
+      scenes: dto.scenes ?? 6,
+    });
+
+    return { scenes };
+  }
+
+  @Post(":id/video")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async generateVideo(
+    @Param("id") id: string,
+    @Body() dto: GenerateVideoDto,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+
+    await this.articleRepo.updateVideo(id, { status: "PENDING", error: null });
+    await videoQueue.add("render-video", {
+      articleId: id,
+      userId: req.userId,
+      options: {
+        voice: dto.voice || null,
+        voiceRate: dto.voiceRate,
+        voicePitch: dto.voicePitch,
+        background: dto.background ?? "gradient",
+        imageUrls: dto.imageUrls?.filter(Boolean) ?? [],
+        theme: dto.theme ?? "ink",
+        aspect: dto.aspect ?? "9:16",
+        scenes: dto.scenes ?? 6,
+        quality: dto.quality ?? "final",
+        cta: dto.cta || null,
+        scriptSource: dto.scriptSource ?? "auto",
+        customScript: dto.customScript || null,
+        kenBurns: dto.kenBurns ?? false,
+        transition: dto.transition ?? "none",
+        musicUrl: dto.musicUrl || null,
+        musicVolume: dto.musicVolume ?? 20,
+        font: dto.font ?? "sans",
+        textColor: dto.textColor || null,
+        textPosition: dto.textPosition ?? "center",
+        uppercase: dto.uppercase ?? false,
+        watermark: dto.watermark ?? true,
+        watermarkText: dto.watermarkText || null,
+        format: dto.format ?? "short",
+      },
+    });
+
+    return { id, status: "PENDING" };
+  }
+
+  @Delete(":id/video")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteVideo(
+    @Param("id") id: string,
+    @Req() req: Request & { userId: string },
+  ) {
+    const article = await this.articleRepo.findById(id);
+    if (!article || article.userId !== req.userId) {
+      throw new NotFoundException(`Article ${id} not found`);
+    }
+
+    await unlink(videoFilePath(id)).catch(() => undefined);
+    await this.articleRepo.clearVideo(id);
   }
 
   // ─── Repurposing (derivatives) ─────────────────────────

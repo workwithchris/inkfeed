@@ -9,7 +9,9 @@ import {
   deleteProvider,
   testProvider,
   type ProviderTestResult,
+  type AiProviderResponse,
 } from "@/lib/api";
+import { ConfirmDialog } from "./ui/confirm-dialog";
 
 const PROVIDERS: { id: string; label: string; needsBaseUrl?: boolean }[] = [
   { id: "openai", label: "OpenAI" },
@@ -39,6 +41,8 @@ export function ProviderManager() {
   const [testResults, setTestResults] = useState<
     Record<string, ProviderTestResult>
   >({});
+  const [pendingDelete, setPendingDelete] =
+    useState<AiProviderResponse | null>(null);
 
   const { data: providers, isLoading } = useQuery({
     queryKey: ["providers"],
@@ -75,7 +79,10 @@ export function ProviderManager() {
 
   const removeMutation = useMutation({
     mutationFn: deleteProvider,
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setPendingDelete(null);
+      invalidate();
+    },
   });
 
   const testMutation = useMutation({
@@ -338,7 +345,7 @@ export function ProviderManager() {
                   </button>
 
                   <button
-                    onClick={() => removeMutation.mutate(p.id)}
+                    onClick={() => setPendingDelete(p)}
                     disabled={removeMutation.isPending}
                     aria-label={`Delete ${p.label ?? p.provider}`}
                     className="rounded-sm p-2 text-faint transition-colors hover:bg-hairline-soft hover:text-error disabled:opacity-40"
@@ -353,6 +360,27 @@ export function ProviderManager() {
           </div>
         )}
       </section>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title="Remove this provider?"
+        description={
+          pendingDelete
+            ? `${pendingDelete.label || pendingDelete.provider} (${
+                pendingDelete.model
+              }) will be removed from the fallback chain.`
+            : undefined
+        }
+        confirmLabel="Remove"
+        destructive
+        pending={removeMutation.isPending}
+        onConfirm={() => {
+          if (pendingDelete) removeMutation.mutate(pendingDelete.id);
+        }}
+      />
     </div>
   );
 }

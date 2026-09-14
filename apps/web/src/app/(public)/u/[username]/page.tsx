@@ -51,9 +51,17 @@ export default async function ProfilePage({
   return (
     <main className="container-page py-16">
       <header className="flex flex-col gap-6 border-b border-hairline pb-12">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-heading-md font-medium text-white">
-          {initials(displayName)}
-        </span>
+        {profile.user.imageUrl ? (
+          <img
+            src={profile.user.imageUrl}
+            alt=""
+            className="h-16 w-16 rounded-full border border-hairline object-cover"
+          />
+        ) : (
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-heading-md font-medium text-white">
+            {initials(displayName)}
+          </span>
+        )}
         <div>
           <h1 className="text-display-xl text-ink">{displayName}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-md text-mute">
@@ -84,6 +92,7 @@ export default async function ProfilePage({
               author={{
                 username: profile.user.username,
                 name: profile.user.name,
+                imageUrl: profile.user.imageUrl,
               }}
             />
           ))}

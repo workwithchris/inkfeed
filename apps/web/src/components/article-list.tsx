@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "./ui/confirm-dialog";
 import {
   listArticles,
   listAllPublications,
@@ -138,6 +140,9 @@ function displayTitle(article: ArticleResponse): string {
 
 export function ArticleList() {
   const queryClient = useQueryClient();
+  const [pendingDelete, setPendingDelete] = useState<ArticleResponse | null>(
+    null,
+  );
   const { data: articles, isLoading } = useQuery({
     queryKey: ["articles"],
     queryFn: listArticles,
@@ -172,6 +177,7 @@ export function ArticleList() {
   const deleteMutation = useMutation({
     mutationFn: deleteArticle,
     onSuccess: () => {
+      setPendingDelete(null);
       queryClient.invalidateQueries({ queryKey: ["articles"] });
       queryClient.invalidateQueries({ queryKey: ["publications"] });
     },
@@ -284,10 +290,7 @@ export function ArticleList() {
               <StatusBadge status={article.status} />
 
               <button
-                onClick={() => {
-                  if (!window.confirm("Delete this article?")) return;
-                  deleteMutation.mutate(article.id);
-                }}
+                onClick={() => setPendingDelete(article)}
                 disabled={deleteMutation.isPending}
                 aria-label="Delete article"
                 className="rounded-md p-2 text-faint opacity-0 transition-all hover:bg-hairline-soft hover:text-error focus:opacity-100 disabled:opacity-40 group-hover:opacity-100"
@@ -309,6 +312,25 @@ export function ArticleList() {
           );
         })}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title="Delete this article?"
+        description={
+          pendingDelete
+            ? `"${displayTitle(pendingDelete)}" will be permanently removed.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        destructive
+        pending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (pendingDelete) deleteMutation.mutate(pendingDelete.id);
+        }}
+      />
     </div>
   );
 }

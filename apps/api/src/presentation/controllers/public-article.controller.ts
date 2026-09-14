@@ -70,6 +70,7 @@ export class PublicArticleController {
       createdAt: article.createdAt,
       authorUsername: author?.username ?? null,
       authorName: author?.name ?? null,
+      authorImageUrl: author?.imageUrl ?? null,
     };
   }
 }

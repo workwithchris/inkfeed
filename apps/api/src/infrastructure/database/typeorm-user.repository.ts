@@ -30,12 +30,14 @@ export class TypeOrmUserRepository implements UserRepository {
     clerkUserId: string;
     email: string;
     name: string | null;
+    imageUrl?: string | null;
   }): Promise<User> {
     // Attach to an existing row by email if present (pre-Clerk users).
     const existing = await this.repo.findOne({ where: { email: data.email } });
     if (existing) {
       existing.clerkUserId = data.clerkUserId;
       if (data.name) existing.name = data.name;
+      if (data.imageUrl) existing.imageUrl = data.imageUrl;
       const saved = await this.repo.save(existing);
       return this.toDomain(saved);
     }
@@ -44,9 +46,17 @@ export class TypeOrmUserRepository implements UserRepository {
       clerkUserId: data.clerkUserId,
       email: data.email,
       name: data.name,
+      imageUrl: data.imageUrl ?? null,
     });
     const saved = await this.repo.save(entity);
     return this.toDomain(saved);
+  }
+
+  async updateImage(userId: string, imageUrl: string): Promise<User> {
+    await this.repo.update(userId, { imageUrl });
+    const entity = await this.repo.findOne({ where: { id: userId } });
+    if (!entity) throw new ConflictException("User not found");
+    return this.toDomain(entity);
   }
 
   async updateUsername(userId: string, username: string): Promise<User> {
@@ -70,6 +80,7 @@ export class TypeOrmUserRepository implements UserRepository {
       email: entity.email,
       username: entity.username,
       name: entity.name,
+      imageUrl: entity.imageUrl,
     };
   }
 }

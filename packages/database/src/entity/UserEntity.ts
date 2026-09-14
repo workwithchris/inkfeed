@@ -29,6 +29,10 @@ export class UserEntity {
   @Column({ type: "varchar", nullable: true })
   name!: string | null;
 
+  // Profile image (from Clerk), used for public bylines.
+  @Column({ type: "text", nullable: true })
+  imageUrl!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

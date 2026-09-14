@@ -19,6 +19,7 @@ import { AiRouteResolver } from "./infrastructure/ai/ai-route-resolver.js";
 import { BullMQWorker } from "./infrastructure/queue/bullmq.worker.js";
 import { PublishWorker } from "./infrastructure/queue/publish.worker.js";
 import { DerivativeWorker } from "./infrastructure/queue/derivative.worker.js";
+import { VideoWorker } from "./infrastructure/queue/video.worker.js";
 import { AuthService } from "./infrastructure/auth/auth.service.js";
 import { ClerkAuthGuard } from "./infrastructure/auth/clerk-auth.guard.js";
 import { DevtoPublisher } from "./infrastructure/publishers/devto.publisher.js";
@@ -31,6 +32,7 @@ import { WebhookPublisher } from "./infrastructure/publishers/webhook.publisher.
 import { PublisherRegistry } from "./infrastructure/publishers/publisher.registry.js";
 import { ProcessArticleUseCase } from "./application/commands/process-article.command.js";
 import { GenerateDerivativeUseCase } from "./application/commands/generate-derivative.command.js";
+import { GenerateVideoUseCase } from "./application/commands/generate-video.command.js";
 import { UpdateArticleUseCase } from "./application/commands/update-article.command.js";
 import { ConnectPlatformUseCase } from "./application/commands/connect-platform.command.js";
 import { CreateAiProviderUseCase } from "./application/commands/create-provider.command.js";
@@ -46,6 +48,7 @@ import { PublicationController } from "./presentation/controllers/publication.co
 import { HealthController } from "./presentation/controllers/health.controller.js";
 import { PublicArticleController } from "./presentation/controllers/public-article.controller.js";
 import { PublicFeedController } from "./presentation/controllers/public-feed.controller.js";
+import { MediaController } from "./presentation/controllers/media.controller.js";
 import { PublicProfileController } from "./presentation/controllers/public-profile.controller.js";
 import { ProfileController } from "./presentation/controllers/profile.controller.js";
 import { SseService } from "./presentation/sse/sse.service.js";
@@ -133,6 +136,7 @@ const EventPublisherProvider = {
     PublicProfileController,
     PublicFeedController,
     ProfileController,
+    MediaController,
     HealthController,
   ],
   providers: [
@@ -158,6 +162,7 @@ const EventPublisherProvider = {
     AiRouteResolver,
     ProcessArticleUseCase,
     GenerateDerivativeUseCase,
+    GenerateVideoUseCase,
     UpdateArticleUseCase,
     ConnectPlatformUseCase,
     CreateAiProviderUseCase,
@@ -167,6 +172,7 @@ const EventPublisherProvider = {
     BullMQWorker,
     PublishWorker,
     DerivativeWorker,
+    VideoWorker,
   ],
 })
 export class AppModule {}

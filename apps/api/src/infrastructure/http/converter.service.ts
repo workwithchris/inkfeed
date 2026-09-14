@@ -120,6 +120,46 @@ export class HttpConverterService implements ConverterService {
     };
   }
 
+  async renderVideo(input: {
+    title: string;
+    scenes: { text: string; narration?: string }[];
+    author: string | null;
+    subtitle: string | null;
+    coverUrl: string | null;
+    imageUrls?: string[];
+    aspect?: "9:16" | "1:1" | "16:9";
+    theme?: "ink" | "slate" | "noir" | "light";
+    quality?: "preview" | "final";
+    voice?: string | null;
+    voiceRate?: number;
+    voicePitch?: number;
+    kenBurns?: boolean;
+    transition?: "none" | "fade";
+    musicUrl?: string | null;
+    musicVolume?: number;
+    font?: "sans" | "serif" | "mono";
+    textColor?: string | null;
+    textPosition?: "top" | "center" | "bottom";
+    uppercase?: boolean;
+    watermark?: boolean;
+    watermarkText?: string | null;
+  }): Promise<Buffer> {
+    this.logger.log(`Rendering video for "${input.title}"`);
+    const response = await fetch(`${this.baseUrl}/render-video`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      signal: AbortSignal.timeout(240_000),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Converter service error ${response.status}: ${err}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+  }
+
   private async parse(response: Response): Promise<ExtractedContent> {
     if (!response.ok) {
       const err = await response.text();

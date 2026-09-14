@@ -81,6 +81,16 @@ export class ArticleEntity {
   @Column({ type: "int", default: 0 })
   viewCount!: number;
 
+  // Short promo video rendered from the article (path served by the API).
+  @Column({ type: "text", nullable: true })
+  videoUrl!: string | null;
+
+  @Column({ type: "varchar", nullable: true })
+  videoStatus!: "PENDING" | "RENDERING" | "READY" | "FAILED" | null;
+
+  @Column({ type: "text", nullable: true })
+  videoError!: string | null;
+
   @Column({ type: "varchar", default: "PENDING" })
   status!: JobStatus;
 

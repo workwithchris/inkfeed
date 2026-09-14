@@ -9,6 +9,7 @@ import {
   parseList,
 } from "@/lib/markdown";
 import { RichTextEditor } from "./rich-text-editor";
+import { ConfirmDialog } from "./ui/confirm-dialog";
 
 interface ArticleEditorProps {
   article: ArticleResponse;
@@ -74,6 +75,7 @@ export function ArticleEditor({
     [article.content],
   );
 
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [title, setTitle] = useState(article.title);
   const [html, setHtml] = useState(initialHtml);
   const [coverImageUrl, setCoverImageUrl] = useState(article.coverImageUrl ?? "");
@@ -127,7 +129,10 @@ export function ArticleEditor({
   };
 
   const cancel = () => {
-    if (dirty && !window.confirm("Discard unsaved changes?")) return;
+    if (dirty) {
+      setConfirmDiscard(true);
+      return;
+    }
     onCancel();
   };
 
@@ -346,6 +351,19 @@ export function ArticleEditor({
           </p>
         </aside>
       </div>
+
+      <ConfirmDialog
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        title="Discard unsaved changes?"
+        description="Your edits to this article will be lost."
+        confirmLabel="Discard"
+        destructive
+        onConfirm={() => {
+          setConfirmDiscard(false);
+          onCancel();
+        }}
+      />
     </div>
   );
 }

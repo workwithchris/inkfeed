@@ -53,6 +53,9 @@ export interface ArticleResponse {
   readingTimeMinutes: number | null;
   coverImageUrl: string | null;
   viewCount: number;
+  videoUrl: string | null;
+  videoStatus: "PENDING" | "RENDERING" | "READY" | "FAILED" | null;
+  videoError: string | null;
   status: string;
   durationSeconds: number | null;
   channel: string | null;
@@ -84,6 +87,7 @@ export interface PublicArticleResponse {
   createdAt: string;
   authorUsername: string | null;
   authorName: string | null;
+  authorImageUrl: string | null;
 }
 
 export type PublishPlatformId =
@@ -233,6 +237,7 @@ export interface PublicProfile {
     id: string;
     username: string | null;
     name: string | null;
+    imageUrl: string | null;
     bio: string | null;
   };
   articles: PublicProfileArticle[];
@@ -263,6 +268,7 @@ export interface PublicFeedItem {
   createdAt: string;
   authorUsername: string | null;
   authorName: string | null;
+  authorImageUrl: string | null;
 }
 
 export interface PublicFeed {
@@ -335,6 +341,67 @@ export async function regenerateArticle(
   id: string,
 ): Promise<{ id: string; status: string }> {
   return apiFetch(`/api/articles/${id}/regenerate`, { method: "POST" });
+}
+
+export interface VideoOptionsInput {
+  voice?: string;
+  voiceRate?: number;
+  voicePitch?: number;
+  background?: "gradient" | "cover";
+  imageUrls?: string[];
+  theme?: "ink" | "slate" | "noir" | "light";
+  aspect?: "9:16" | "1:1" | "16:9";
+  scenes?: number;
+  quality?: "preview" | "final";
+  cta?: string;
+  scriptSource?: "auto" | "rewrite" | "custom";
+  customScript?: string;
+  kenBurns?: boolean;
+  transition?: "none" | "fade";
+  musicUrl?: string;
+  musicVolume?: number;
+  font?: "sans" | "serif" | "mono";
+  textColor?: string;
+  textPosition?: "top" | "center" | "bottom";
+  uppercase?: boolean;
+  watermark?: boolean;
+  watermarkText?: string;
+  format?: "short" | "full";
+}
+
+export async function generateArticleVideo(
+  id: string,
+  options: VideoOptionsInput = {},
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/api/articles/${id}/video`, {
+    method: "POST",
+    body: JSON.stringify(options),
+  });
+}
+
+export async function deleteArticleVideo(id: string): Promise<void> {
+  await apiFetch(`/api/articles/${id}/video`, { method: "DELETE" });
+}
+
+export interface VideoScene {
+  text: string;
+  narration: string;
+}
+
+export async function previewVideoScript(
+  id: string,
+  options: VideoOptionsInput = {},
+): Promise<{ scenes: VideoScene[] }> {
+  return apiFetch(`/api/articles/${id}/video/script`, {
+    method: "POST",
+    body: JSON.stringify(options),
+  });
+}
+
+// Prefix a stored media path (e.g. /api/media/videos/x.mp4) with the API base.
+export function apiUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE}${path}`;
 }
 
 // ─── Connections ──────────────────────────────────────────

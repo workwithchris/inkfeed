@@ -11,6 +11,7 @@ import type {
   Article,
   PublicFeedQuery,
   PublicFeedResult,
+  VideoStatus,
 } from "../../domain/index.js";
 
 @Injectable()
@@ -104,6 +105,7 @@ export class TypeOrmArticleRepository implements ArticleRepository {
         article: this.toDomain(entity),
         authorUsername: entity.user?.username ?? null,
         authorName: entity.user?.name ?? null,
+        authorImageUrl: entity.user?.imageUrl ?? null,
       })),
     };
   }
@@ -172,8 +174,30 @@ export class TypeOrmArticleRepository implements ArticleRepository {
     await this.repo.delete(id);
   }
 
+  async clearVideo(id: string): Promise<void> {
+    await this.repo.update(id, {
+      videoUrl: null,
+      videoStatus: null,
+      videoError: null,
+    });
+  }
+
   async incrementView(id: string): Promise<void> {
     await this.repo.increment({ id }, "viewCount", 1);
+  }
+
+  async updateVideo(
+    id: string,
+    data: {
+      status: VideoStatus;
+      videoUrl?: string | null;
+      error?: string | null;
+    },
+  ): Promise<void> {
+    const patch: Partial<ArticleEntity> = { videoStatus: data.status };
+    if (data.videoUrl !== undefined) patch.videoUrl = data.videoUrl;
+    if (data.error !== undefined) patch.videoError = data.error;
+    await this.repo.update(id, patch);
   }
 
   private toDomain(entity: ArticleEntity): Article {
@@ -196,6 +220,9 @@ export class TypeOrmArticleRepository implements ArticleRepository {
       readingTimeMinutes: entity.readingTimeMinutes,
       coverImageUrl: entity.coverImageUrl,
       viewCount: entity.viewCount,
+      videoUrl: entity.videoUrl,
+      videoStatus: entity.videoStatus as VideoStatus | null,
+      videoError: entity.videoError,
       status: entity.status,
       transcript: entity.transcript,
       durationSeconds: entity.durationSeconds,

@@ -15,7 +15,14 @@ export class AuthService {
 
   async resolveUser(clerkUserId: string): Promise<User> {
     const existing = await this.users.findByClerkId(clerkUserId);
-    if (existing) return existing;
+    if (existing) {
+      // Backfill the profile image once; we don't refresh it on every request.
+      if (!existing.imageUrl) {
+        const imageUrl = await this.fetchClerkImage(clerkUserId);
+        if (imageUrl) return this.users.updateImage(existing.id, imageUrl);
+      }
+      return existing;
+    }
 
     const secretKey = process.env.CLERK_SECRET_KEY;
     if (!secretKey) {
@@ -25,6 +32,7 @@ export class AuthService {
     let email: string;
     let name: string | null = null;
     let username: string | null = null;
+    let imageUrl: string | null = null;
     try {
       const clerk = createClerkClient({ secretKey });
       const u = await clerk.users.getUser(clerkUserId);
@@ -35,11 +43,17 @@ export class AuthService {
         u.username ||
         null;
       username = u.username || null;
+      imageUrl = u.imageUrl || null;
     } catch {
       throw new UnauthorizedException("Unable to load Clerk user");
     }
 
-    const user = await this.users.upsertFromClerk({ clerkUserId, email, name });
+    const user = await this.users.upsertFromClerk({
+      clerkUserId,
+      email,
+      name,
+      imageUrl,
+    });
 
     // First-time users get a profile slug derived from their Clerk username
     // (falling back to the email local-part). It is editable later in Settings.
@@ -58,6 +72,18 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  private async fetchClerkImage(clerkUserId: string): Promise<string | null> {
+    const secretKey = process.env.CLERK_SECRET_KEY;
+    if (!secretKey) return null;
+    try {
+      const clerk = createClerkClient({ secretKey });
+      const u = await clerk.users.getUser(clerkUserId);
+      return u.imageUrl || null;
+    } catch {
+      return null;
+    }
   }
 }
 

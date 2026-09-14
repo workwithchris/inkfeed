@@ -268,6 +268,13 @@ function parseFrontmatter(raw: string): {
   return { content, meta };
 }
 
+const MAX_SOURCE_CHARS = 14_000;
+
+function truncateSource(text: string, max = MAX_SOURCE_CHARS): string {
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}\n\n[...source truncated for length...]`;
+}
+
 // ─── Derivative prompt builder ────────────────────────────
 function buildDerivativePrompt(
   req: AiTransformRequest,
@@ -282,7 +289,7 @@ VOICE:
 - Use precise, concrete language; avoid hype and clichés.
 
 Source transcript:
-${req.transcript}`;
+${truncateSource(req.transcript)}`;
 
   switch (kind) {
     case "tweet_thread":
@@ -442,6 +449,93 @@ export async function transformToFormat(
     .trim();
 
   return { content, model };
+}
+
+// ─── Short-video script ───────────────────────────────────
+export interface AiVideoScene {
+  text: string;
+  narration: string;
+}
+
+function parseVideoScenes(raw: string): AiVideoScene[] {
+  const scenes: AiVideoScene[] = [];
+  let pendingText: string | null = null;
+  let pendingNarration = "";
+
+  const flush = () => {
+    if (pendingText) {
+      scenes.push({
+        text: pendingText,
+        narration: pendingNarration.trim() || pendingText,
+      });
+    }
+    pendingText = null;
+    pendingNarration = "";
+  };
+
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    const title = trimmed.match(/^TITLE\s*:\s*(.+)$/i);
+    const narration = trimmed.match(/^NARRATION\s*:\s*(.+)$/i);
+    if (title) {
+      flush();
+      pendingText = title[1].trim();
+    } else if (narration) {
+      pendingNarration = narration[1].trim();
+    } else if (trimmed && pendingNarration) {
+      pendingNarration += ` ${trimmed}`;
+    }
+  }
+  flush();
+  return scenes.filter((s) => s.text).slice(0, 10);
+}
+
+// Produce a richer, multi-scene short-video script from the article material.
+export async function generateVideoScript(
+  req: AiTransformRequest,
+  routes?: AiRoute[],
+): Promise<AiVideoScene[]> {
+  const material = truncateSource(req.transcript, 8_000);
+  const system =
+    "You write tight, factual narration scripts for vertical short-form videos (Shorts/Reels/TikTok).";
+  const prompt = `Turn the source article into a 6-scene vertical short-video script.
+
+Source title: "${req.title}"
+
+Source material:
+${material}
+
+RULES:
+- Exactly 6 scenes.
+- Scene 1 is a punchy hook; the final scene is a short call to action.
+- Each scene has an on-screen caption (max 8 words) and 1-2 spoken sentences (20-40 words) that summarize one key point.
+- Ground every claim in the source. Do not invent facts. Do not name the source, presenter, or video.
+- Plain text only. No markdown, no code fences.
+
+OUTPUT FORMAT (exact), repeating for each scene:
+TITLE: <caption>
+NARRATION: <spoken narration>`;
+
+  const { raw } = await complete(
+    system,
+    prompt,
+    { temperature: 0.6, maxTokens: 1600 },
+    routes,
+  );
+
+  const scenes = parseVideoScenes(raw);
+  if (scenes.length > 0) return scenes;
+
+  // Fallback: split into sentences if the model ignored the format.
+  return raw
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((sentence) => ({
+      text: sentence.length > 70 ? `${sentence.slice(0, 67)}...` : sentence,
+      narration: sentence,
+    }));
 }
 
 // Send a tiny request through a single route to verify the key/model work.

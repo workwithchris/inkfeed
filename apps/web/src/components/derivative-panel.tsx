@@ -13,6 +13,8 @@ import {
   type DerivativeResponse,
 } from "@/lib/api";
 import { firstTweet, tweetIntentUrl } from "@/lib/share";
+import { ConfirmDialog } from "./ui/confirm-dialog";
+import { describeGenerationError } from "@/lib/errors";
 
 const KINDS: { id: DerivativeKind; label: string; hint: string }[] = [
   { id: "tweet_thread", label: "Tweet thread", hint: "8-12 post thread" },
@@ -44,6 +46,8 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] =
+    useState<DerivativeResponse | null>(null);
   const [error, setError] = useState("");
 
   const { data: derivatives, isLoading } = useQuery({
@@ -72,7 +76,10 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
 
   const removeMutation = useMutation({
     mutationFn: (id: string) => deleteDerivative(articleId, id),
-    onSuccess: () => invalidate(),
+    onSuccess: () => {
+      setPendingDelete(null);
+      invalidate();
+    },
   });
 
   const saveMutation = useMutation({
@@ -102,11 +109,30 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
 
   return (
     <section className="mt-10 flex flex-col gap-5 border-t border-hairline pt-10">
-      <div>
-        <p className="eyebrow">Repurpose</p>
-        <p className="mt-1 text-body-sm text-mute">
-          Turn this article into other formats.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-hairline bg-canvas text-ink">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 7h16" />
+              <path d="M4 12h10" />
+              <path d="M4 17h7" />
+            </svg>
+          </span>
+          <div>
+            <h2 className="text-heading-md text-ink">Repurpose</h2>
+            <p className="mt-0.5 text-body-sm text-mute">
+              Turn this article into other formats.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => createMutation.mutate(activeKind)}
+          disabled={generating}
+          className="btn-sm-primary shrink-0"
+        >
+          {generating ? "Queuing…" : `Generate ${meta.label.toLowerCase()}`}
+        </button>
       </div>
 
       <div
@@ -137,17 +163,7 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-body-sm text-faint">{meta.hint}</p>
-        <button
-          type="button"
-          onClick={() => createMutation.mutate(activeKind)}
-          disabled={generating}
-          className="btn-sm-primary"
-        >
-          {generating ? "Queuing…" : `Generate ${meta.label.toLowerCase()}`}
-        </button>
-      </div>
+      <p className="text-body-sm text-faint">{meta.hint}</p>
 
       {error && <p className="text-body-sm text-error">{error}</p>}
 
@@ -233,7 +249,7 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
                   derivative.status === "SYNTHESIZING" ? (
                     <button
                       type="button"
-                      onClick={() => removeMutation.mutate(derivative.id)}
+                      onClick={() => setPendingDelete(derivative)}
                       disabled={removeMutation.isPending}
                       title="Stop generating and remove"
                       className="btn-sm-ghost"
@@ -243,7 +259,7 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => removeMutation.mutate(derivative.id)}
+                      onClick={() => setPendingDelete(derivative)}
                       disabled={removeMutation.isPending}
                       className="btn-sm-ghost"
                     >
@@ -256,7 +272,9 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
               {derivative.status === "FAILED" ? (
                 <div className="mt-3 flex flex-col gap-3">
                   <p className="text-body-sm text-error">
-                    {derivative.errorMessage || "Generation failed."}
+                    {describeGenerationError(derivative.errorMessage) ||
+                      derivative.errorMessage ||
+                      "Generation failed."}
                   </p>
                   <div className="flex justify-end gap-2">
                     <button
@@ -317,6 +335,21 @@ export function DerivativePanel({ articleId }: { articleId: string }) {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title="Delete this draft?"
+        description="This generated version will be permanently removed."
+        confirmLabel="Delete"
+        destructive
+        pending={removeMutation.isPending}
+        onConfirm={() => {
+          if (pendingDelete) removeMutation.mutate(pendingDelete.id);
+        }}
+      />
     </section>
   );
 }

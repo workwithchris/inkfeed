@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { SITE_PLATFORM_LABEL } from "@repo/types";
 import { PlatformIcon } from "./platform-icon";
+import { ConfirmDialog } from "./ui/confirm-dialog";
 
 type PlatformId = ConnectionResponse["platform"];
 
@@ -70,6 +71,8 @@ export function ConnectionManager() {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingDisconnect, setPendingDisconnect] =
+    useState<ConnectionResponse | null>(null);
   const [connectingBlogger, setConnectingBlogger] = useState(false);
   const [connectingLinkedIn, setConnectingLinkedIn] = useState(false);
 
@@ -110,8 +113,10 @@ export function ConnectionManager() {
 
   const removeMutation = useMutation({
     mutationFn: deleteConnection,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["connections"] }),
+    onSuccess: () => {
+      setPendingDisconnect(null);
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+    },
   });
 
   const connectBlogger = async () => {
@@ -400,7 +405,7 @@ export function ConnectionManager() {
                   </div>
                   {conn.platform !== "site" && (
                     <button
-                      onClick={() => removeMutation.mutate(conn.id)}
+                      onClick={() => setPendingDisconnect(conn)}
                       disabled={removeMutation.isPending}
                       aria-label={`Disconnect ${meta?.label ?? conn.platform}`}
                       className="rounded-sm p-2 text-faint transition-colors hover:bg-hairline-soft hover:text-error disabled:opacity-40"
@@ -416,6 +421,28 @@ export function ConnectionManager() {
           </div>
         )}
       </section>
+
+      <ConfirmDialog
+        open={!!pendingDisconnect}
+        onOpenChange={(open) => {
+          if (!open) setPendingDisconnect(null);
+        }}
+        title="Disconnect this account?"
+        description={
+          pendingDisconnect
+            ? `${
+                PLATFORMS.find((p) => p.id === pendingDisconnect.platform)
+                  ?.label ?? pendingDisconnect.platform
+              } will no longer be available as a publish destination.`
+            : undefined
+        }
+        confirmLabel="Disconnect"
+        destructive
+        pending={removeMutation.isPending}
+        onConfirm={() => {
+          if (pendingDisconnect) removeMutation.mutate(pendingDisconnect.id);
+        }}
+      />
     </div>
   );
 }

@@ -126,9 +126,17 @@ export default async function PublicArticlePage({
         <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-hairline pb-8">
           {authorLabel && (
             <>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[11px] font-medium text-white">
-                {initials(authorLabel)}
-              </span>
+              {article.authorImageUrl ? (
+                <img
+                  src={article.authorImageUrl}
+                  alt=""
+                  className="h-8 w-8 rounded-full border border-hairline object-cover"
+                />
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[11px] font-medium text-white">
+                  {initials(authorLabel)}
+                </span>
+              )}
               <span className="text-body-md text-ink">
                 {article.authorUsername ? (
                   <a

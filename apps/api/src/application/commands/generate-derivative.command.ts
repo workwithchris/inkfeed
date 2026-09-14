@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, Inject } from "@nestjs/common";
 import type {
   ArticleRepository,
   DerivativeRepository,
@@ -21,7 +21,9 @@ export class GenerateDerivativeUseCase {
   async execute(derivativeId: string): Promise<void> {
     const derivative = await this.derivatives.findById(derivativeId);
     if (!derivative) {
-      throw new NotFoundException(`Derivative ${derivativeId} not found`);
+      // The row was deleted while the job was queued/running — nothing to do.
+      this.logger.warn(`Derivative ${derivativeId} no longer exists; skipping`);
+      return;
     }
 
     try {

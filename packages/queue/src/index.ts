@@ -12,6 +12,7 @@ export const QUEUE_NAMES = {
   ARTICLES: "articles",
   PUBLISHES: "publishes",
   DERIVATIVES: "derivatives",
+  VIDEOS: "videos",
 } as const;
 
 // ─── Job Data ─────────────────────────────────────────────
@@ -39,6 +40,38 @@ export interface DerivativeJobData {
   articleId: string;
   userId: string;
   kind: DerivativeKind;
+}
+
+export interface VideoOptions {
+  voice?: string | null;
+  voiceRate?: number;
+  voicePitch?: number;
+  background?: "gradient" | "cover";
+  imageUrls?: string[];
+  theme?: "ink" | "slate" | "noir" | "light";
+  aspect?: "9:16" | "1:1" | "16:9";
+  scenes?: number;
+  quality?: "preview" | "final";
+  cta?: string | null;
+  scriptSource?: "auto" | "rewrite" | "custom";
+  customScript?: string | null;
+  kenBurns?: boolean;
+  transition?: "none" | "fade";
+  musicUrl?: string | null;
+  musicVolume?: number;
+  font?: "sans" | "serif" | "mono";
+  textColor?: string | null;
+  textPosition?: "top" | "center" | "bottom";
+  uppercase?: boolean;
+  watermark?: boolean;
+  watermarkText?: string | null;
+  format?: "short" | "full";
+}
+
+export interface VideoJobData {
+  articleId: string;
+  userId: string;
+  options?: VideoOptions;
 }
 
 // ─── State Machine ────────────────────────────────────────
@@ -98,6 +131,20 @@ export const derivativeQueue = new Queue<DerivativeJobData>(
     },
   },
 );
+
+// ─── Video Queue ──────────────────────────────────────────
+export const videoQueue = new Queue<VideoJobData>(QUEUE_NAMES.VIDEOS, {
+  connection,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: {
+      type: "exponential",
+      delay: 3000,
+    },
+    removeOnComplete: { age: 86400 },
+    removeOnFail: { age: 604800 },
+  },
+});
 
 // ─── Worker ───────────────────────────────────────────────
 export function createArticleWorker(

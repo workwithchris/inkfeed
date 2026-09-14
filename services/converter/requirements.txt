@@ -6,3 +6,5 @@ yt-dlp>=2024.12.13
 python-multipart==0.0.20
 pydantic==2.10.4
 httpx==0.28.1
+Pillow>=10.0.0
+edge-tts>=6.1.0

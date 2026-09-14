@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from markitdown import MarkItDown
+from app.video import build_video
 import feedparser
+import httpx
 import yt_dlp
 import io
 import html
@@ -381,6 +383,100 @@ async def playlist(req: PlaylistRequest):
         raise HTTPException(
             status_code=500, detail=f"Playlist expansion failed: {str(e)}"
         )
+
+
+class VideoScene(BaseModel):
+    text: str
+    narration: str | None = None
+
+
+class VideoRequest(BaseModel):
+    title: str
+    scenes: list[VideoScene]
+    author: str | None = None
+    subtitle: str | None = None
+    coverUrl: HttpUrl | None = None
+    imageUrls: list[str] | None = None
+    voice: str | None = None
+    aspect: str | None = None
+    theme: str | None = None
+    quality: str | None = None
+    voiceRate: int | None = None
+    voicePitch: int | None = None
+    kenBurns: bool = False
+    transition: str | None = None
+    musicUrl: str | None = None
+    musicVolume: int | None = None
+    font: str | None = None
+    textColor: str | None = None
+    textPosition: str | None = None
+    uppercase: bool = False
+    watermark: bool = True
+    watermarkText: str | None = None
+
+
+@app.post("/render-video")
+def render_video(req: VideoRequest):
+    """Render a short vertical video (MP4 bytes) from title + key points."""
+    urls = [u for u in (req.imageUrls or []) if u]
+    if not urls and req.coverUrl:
+        urls = [str(req.coverUrl)]
+
+    images: list[bytes] = []
+    if urls:
+        try:
+            with httpx.Client(timeout=15, follow_redirects=True) as client:
+                for url in urls:
+                    try:
+                        response = client.get(url)
+                        if response.status_code == 200:
+                            images.append(response.content)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("Image fetch failed for %s: %s", url, exc)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Image fetch failed: %s", exc)
+
+    music: bytes | None = None
+    if req.musicUrl:
+        try:
+            with httpx.Client(timeout=30, follow_redirects=True) as client:
+                response = client.get(req.musicUrl)
+                if response.status_code == 200:
+                    music = response.content
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Music fetch failed: %s", exc)
+
+    try:
+        data = build_video(
+            title=req.title,
+            scenes=[
+                {"text": s.text, "narration": s.narration} for s in req.scenes
+            ],
+            author=req.author,
+            subtitle=req.subtitle,
+            images=images,
+            voice=req.voice,
+            aspect=req.aspect or "9:16",
+            theme_key=req.theme or "ink",
+            quality=req.quality or "final",
+            voice_rate=req.voiceRate,
+            voice_pitch=req.voicePitch,
+            ken_burns=req.kenBurns,
+            transition=req.transition,
+            music_bytes=music,
+            music_volume=req.musicVolume,
+            font_style=req.font or "sans",
+            text_color=req.textColor,
+            text_position=req.textPosition or "center",
+            uppercase=req.uppercase,
+            watermark=req.watermark,
+            watermark_text=req.watermarkText,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Video render failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Video render failed: {exc}")
+
+    return Response(content=data, media_type="video/mp4")
 
 
 @app.get("/health")
